@@ -4,22 +4,12 @@ export default function Contact() {
       <section className="contact-hero">
         <div>
           <p className="eyebrow">Contact Zidash</p>
-          <h1>Talk to us about support, partnerships, and community growth.</h1>
+          <h1 className="contact-hero-title">Talk to us about support, partnerships, and community growth.</h1>
           <p>Send a message to the Zidash team for app support, marketplace questions, creator partnerships, business inquiries, or account help.</p>
           <div className="contact-links">
             <a href="mailto:support@zidash.com">support@zidash.com</a>
             <a href="tel:07000000000">07000000000</a>
-            <span style={{
-              border: '1px solid var(--line)',
-              borderRadius: '99px',
-              background: 'var(--white)',
-              padding: '10px 20px',
-              color: 'var(--ink)',
-              fontWeight: '600',
-              boxShadow: 'var(--shadow-sm)'
-            }}>
-              Lagos, Nigeria
-            </span>
+            <span className="contact-location-chip">Lagos, Nigeria</span>
           </div>
         </div>
         <form className="contact-form" action="#" method="post">

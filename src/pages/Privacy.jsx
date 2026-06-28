@@ -3,7 +3,7 @@ export default function Privacy() {
     <main className="legal-page">
       <section className="legal-hero">
         <p className="eyebrow">Zidash policy</p>
-        <h1>Privacy Policy</h1>
+        <h1 className="legal-hero-title">Privacy Policy</h1>
         <p>This Privacy Policy explains how Zidash may collect, use, share, protect, and retain information when people use the Zidash app, website, and related services.</p>
         <p className="policy-note">This policy is provided as a clear working draft. Consult qualified legal counsel before publishing or relying on it for compliance.</p>
       </section>

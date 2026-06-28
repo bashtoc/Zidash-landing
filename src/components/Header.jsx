@@ -40,16 +40,16 @@ export default function Header() {
         {isOpen ? "Close" : "Menu"}
       </button>
       <nav className="site-nav" aria-label="Primary navigation">
-        <Link to="/" onClick={() => setIsOpen(false)}>Home</Link>
+        <Link className={location.pathname === '/' ? 'active' : ''} to="/" onClick={() => setIsOpen(false)}>Home</Link>
         <Link to={getHashLink('#marketplace')} onClick={(e) => handleHashClick(e, '#marketplace')}>Marketplace</Link>
         <Link to={getHashLink('#jobs')} onClick={(e) => handleHashClick(e, '#jobs')}>Jobs</Link>
+        <Link to={getHashLink('#services')} onClick={(e) => handleHashClick(e, '#services')}>Services</Link>
         <Link to={getHashLink('#creators')} onClick={(e) => handleHashClick(e, '#creators')}>UGC Creators</Link>
         <Link to={getHashLink('#community')} onClick={(e) => handleHashClick(e, '#community')}>Community</Link>
-        <Link to="/about" onClick={() => setIsOpen(false)}>About</Link>
-        <Link to="/contact" onClick={() => setIsOpen(false)}>Contact</Link>
       </nav>
       <div className="header-actions">
-        <Link className="btn btn-primary" to={getHashLink('#download')} onClick={(e) => handleHashClick(e, '#download')}>Download App</Link>
+        <Link className="login-link" to="/contact" onClick={() => setIsOpen(false)}>Log in</Link>
+        <Link className="btn btn-primary" to={getHashLink('#download')} onClick={(e) => handleHashClick(e, '#download')}>Get the App</Link>
       </div>
     </header>
   );

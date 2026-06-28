@@ -3,7 +3,7 @@ export default function Terms() {
     <main className="legal-page">
       <section className="legal-hero">
         <p className="eyebrow">Zidash terms</p>
-        <h1>Terms of Use</h1>
+        <h1 className="legal-hero-title">Terms of Use</h1>
         <p>These Terms of Use describe the rules for using Zidash websites, apps, marketplace features, job tools, creator profiles, messaging, and community services.</p>
       </section>
       
