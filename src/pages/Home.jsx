@@ -30,20 +30,6 @@ const benefits = [
   ['community', 'Community Driven', 'Real people, real connections.'],
 ];
 
-const phoneCategories = [
-  ['phone', 'Phones & Tablets'],
-  ['monitor', 'Electronics'],
-  ['shirt', 'Home & Garden'],
-  ['bag', 'Fashion'],
-  ['car', 'Vehicles'],
-  ['home', 'Property'],
-  ['briefcase', 'Jobs'],
-  ['community', 'Services'],
-  ['home', 'Agriculture'],
-  ['dots', 'Sports'],
-  ['shield', 'Kids & Babies'],
-  ['dots', 'More'],
-];
 
 function Icon({ name }) {
   const common = {
@@ -117,25 +103,7 @@ export default function Home() {
           <div className="dot-field" />
           <span className="burst burst--left" />
           <span className="burst burst--right" />
-          <img className="phone-mock phone-mock--front" src="/zidashphone.png" alt="Zidash marketplace app home screen" />
-          <div className="phone-mock phone-mock--categories" aria-hidden="true">
-            <div className="phone-shell">
-              <div className="phone-notch" />
-              <div className="phone-status">8:41</div>
-              <div className="mini-screen-title">
-                <strong>Explore Categories</strong>
-                <span>View all</span>
-              </div>
-              <div className="phone-category-grid">
-                {phoneCategories.map(([icon, label]) => (
-                  <div key={label} className="phone-category">
-                    <Icon name={icon} />
-                    <small>{label}</small>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
+          <img className="hero-composite-img" src="/heroimage.png" alt="Zidash app preview" />
         </div>
       </section>
 

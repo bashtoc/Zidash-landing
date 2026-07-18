@@ -1,23 +1,16 @@
 export default function About() {
   return (
     <main>
-      <section className="contact-hero">
-        <div>
+      <section className="about-page contact-hero">
+        <div className="about-page-content">
           <p className="eyebrow">About Zidash</p>
           <h1 className="about-hero-title">Empowering Local Communities.</h1>
-          <p>Zidash is built to make local digital commerce easier, safer, and more connected. Whether you are selling products, looking for trusted sellers, hiring talent, finding work, or growing as a creator, Zidash gives you one place to move forward.</p>
-          <div className="about-points" style={{ marginTop: '24px' }}>
-            <span>Community commerce</span>
-            <span>Trust and verification</span>
-            <span>Local discovery</span>
-            <span>Sellers, buyers, employers, job seekers, and creators</span>
+          <div className="about-copy">
+            <p>Zidash is a modern marketplace and opportunity platform built to make buying, selling, hiring, and connecting easier than ever. Whether you're looking for products, local services, job opportunities, or talented UGC creators, Zidash brings everything together in one trusted platform designed for everyday life.</p>
+            <p>Our mission is to help individuals, entrepreneurs, businesses, and creators discover new opportunities, reach more people, and grow with confidence. From everyday shopping and local services to job listings, business promotion, and creator collaborations, Zidash empowers users to build meaningful connections and unlock new possibilities.</p>
+            <p>Designed with trust, simplicity, and convenience at its core, Zidash offers verified user profiles, secure in-app messaging, seller reviews, creator portfolios, business profiles, and powerful discovery tools that help users make informed decisions before every interaction.</p>
+            <p>Whether you're searching for your next customer, your next job, your next collaboration, or your next great deal, Zidash gives you the tools to connect faster, trade smarter, and grow your success&mdash;one opportunity at a time.</p>
           </div>
-        </div>
-        <div className="contact-form about-company-card">
-          <h2>Our Parent Company</h2>
-          <p>
-            Zidash is proudly a product of <strong>Boomger Limited</strong>. We are dedicated to building innovative platforms that bridge gaps in local economies and foster meaningful connections between individuals and businesses.
-          </p>
         </div>
       </section>
     </main>

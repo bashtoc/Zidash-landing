@@ -7,6 +7,12 @@ function App() {
   const location = useLocation();
 
   useEffect(() => {
+    if (location.hash) return;
+
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+  }, [location.pathname, location.search, location.hash]);
+
+  useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
