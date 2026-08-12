@@ -1,4 +1,5 @@
-const configuredBase = import.meta.env.VITE_API_URL || '/api/v1'
+const defaultBase = import.meta.env.PROD ? 'https://api.zidash.com/api/v1' : '/api/v1'
+const configuredBase = import.meta.env.VITE_API_URL || defaultBase
 export const API_BASE = configuredBase.replace(/\/$/, '')
 
 const SESSION_KEY = 'zidash_web_session'

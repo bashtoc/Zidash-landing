@@ -65,6 +65,7 @@ const categoryArtworkFiles = {
   entertainment: '/category-icons/entertainment-hobbies.png',
   gifts: '/category-icons/gifts-events.png',
   solar: '/category-icons/solar-power.webp',
+  wholesale: '/category-icons/wholesale-bulk.png',
 }
 
 function categoryArtworkPosition(category) {
@@ -213,7 +214,7 @@ export function ListingsResultsPage({ categoryOnly = false }) {
     setSearchParams(params)
   }
 
-  return <div className="app-page"><PageIntro eyebrow="Marketplace" title={categoryOnly ? selectedCategory?.name || 'Category listings' : filters.q ? `Results for “${filters.q}”` : 'Search marketplace'} description="Search, filter, and sort listings from the live Zidash marketplace." /><MarketplaceSearch initialQuery={filters.q} onSubmit={(query) => updateFilters({ q: query })} filters={filters} onFiltersChange={updateFilters} categories={categories} />{state.loading ? <LoadingState label="Searching listings" /> : state.error ? <ErrorState message={state.error} retry={state.reload} /> : <><ListingGrid listings={unwrapItems(state)} /><Pagination page={state.meta?.page || page} pages={state.meta?.pages || 1} onPage={(next) => { const params = new URLSearchParams(searchParams); params.set('page', next); setSearchParams(params); window.scrollTo({ top: 0, behavior: 'smooth' }) }} /></>}</div>
+  return <div className={`app-page${categoryOnly ? ' category-results-page' : ''}`}><PageIntro eyebrow="Marketplace" title={categoryOnly ? selectedCategory?.name || 'Category listings' : filters.q ? `Results for “${filters.q}”` : 'Search marketplace'} description="Search, filter, and sort listings from the live Zidash marketplace." /><MarketplaceSearch initialQuery={filters.q} onSubmit={(query) => updateFilters({ q: query })} filters={filters} onFiltersChange={updateFilters} categories={categories} />{state.loading ? <LoadingState label="Searching listings" /> : state.error ? <ErrorState message={state.error} retry={state.reload} /> : <><ListingGrid listings={unwrapItems(state)} /><Pagination page={state.meta?.page || page} pages={state.meta?.pages || 1} onPage={(next) => { const params = new URLSearchParams(searchParams); params.set('page', next); setSearchParams(params); window.scrollTo({ top: 0, behavior: 'smooth' }) }} /></>}</div>
 }
 
 export function ListingDetailPage() {
