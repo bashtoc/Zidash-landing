@@ -1,6 +1,6 @@
 export default function BuyerSafety() {
   return (
-    <main className="legal-page">
+    <main className="legal-page legal-page--safety">
       <section className="legal-hero">
         <p className="eyebrow">Zidash Safety</p>
         <h1 className="legal-hero-title">Buyer Safety Guide</h1>

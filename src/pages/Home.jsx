@@ -81,7 +81,8 @@ export default function Home() {
             Zidash connects you with real people for trusted trade, local jobs, services, UGC creators, and more.
           </p>
           <div className="zidash-hero__actions">
-            <a className="z-btn z-btn--green" href="#download"><Icon name="users" /> Download the App</a>
+            <Link className="z-btn z-btn--green" to="/app"><Icon name="users" /> Open the Web App</Link>
+            <a className="z-btn z-btn--outline" href="#download">Download the App</a>
             <a className="z-btn z-btn--outline" href="#how-it-works"><Icon name="play" /> Watch How It Works</a>
           </div>
           <div className="hero-highlights" id="how-it-works">
@@ -127,10 +128,10 @@ export default function Home() {
           </div>
           <div className="category-grid">
             {categories.map(([icon, label]) => (
-              <a className="category-card" href={`#${label.toLowerCase().replaceAll(' ', '-')}`} key={label}>
+              <Link className="category-card" to={label === 'More' ? '/app/categories' : `/app/search?q=${encodeURIComponent(label)}`} key={label}>
                 <span><Icon name={icon} /></span>
                 <strong>{label}</strong>
-              </a>
+              </Link>
             ))}
           </div>
         </div>
@@ -170,3 +171,4 @@ export default function Home() {
     </main>
   );
 }
+import { Link } from 'react-router-dom';

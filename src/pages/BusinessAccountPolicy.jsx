@@ -1,6 +1,6 @@
 export default function BusinessAccountPolicy() {
   return (
-    <main className="legal-page">
+    <main className="legal-page legal-page--policy">
       <section className="legal-hero">
         <p className="eyebrow">Zidash Policies</p>
         <h1 className="legal-hero-title">Business Account Policy</h1>

@@ -1,6 +1,6 @@
 export default function Privacy() {
   return (
-    <main className="legal-page">
+    <main className="legal-page legal-page--policy">
       <section className="legal-hero reveal-on-scroll">
         <p className="eyebrow">Zidash Policies</p>
         <h1 className="legal-hero-title">Privacy Policy</h1>

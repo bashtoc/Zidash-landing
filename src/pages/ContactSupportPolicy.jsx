@@ -1,6 +1,6 @@
 export default function ContactSupportPolicy() {
   return (
-    <main className="legal-page">
+    <main className="legal-page legal-page--support">
       <section className="legal-hero">
         <p className="eyebrow">Zidash Support</p>
         <h1 className="legal-hero-title">Contact and Support Policy</h1>

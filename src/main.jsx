@@ -1,33 +1,71 @@
-import { StrictMode } from 'react';
+/* oxlint-disable react/only-export-components -- this is the application entry point and route manifest. */
+import { lazy, StrictMode, Suspense } from 'react';
 import { createRoot } from 'react-dom/client';
-import { createBrowserRouter, RouterProvider } from 'react-router-dom';
+import { createBrowserRouter, Navigate, RouterProvider } from 'react-router-dom';
 import App from './App.jsx';
-import Home from './pages/Home.jsx';
-import Contact from './pages/Contact.jsx';
-import Privacy from './pages/Privacy.jsx';
-import Terms from './pages/Terms.jsx';
-import About from './pages/About.jsx';
-import Safety from './pages/Safety.jsx';
-import Legal from './pages/Legal.jsx';
-import FAQ from './pages/FAQ.jsx';
-import Cookie from './pages/Cookie.jsx';
-import Guidelines from './pages/Guidelines.jsx';
-import IntellectualProperty from './pages/IntellectualProperty.jsx';
-import Prohibited from './pages/Prohibited.jsx';
-import JobPolicy from './pages/JobPolicy.jsx';
-import UGCPolicy from './pages/UGCPolicy.jsx';
-import ModerationPolicy from './pages/ModerationPolicy.jsx';
-import AdsPolicy from './pages/AdsPolicy.jsx';
-import VerificationPolicy from './pages/VerificationPolicy.jsx';
-import BuyerSafety from './pages/BuyerSafety.jsx';
-import SellerSafety from './pages/SellerSafety.jsx';
-import ScamPrevention from './pages/ScamPrevention.jsx';
-import BusinessAccountPolicy from './pages/BusinessAccountPolicy.jsx';
-import ServiceProviderPolicy from './pages/ServiceProviderPolicy.jsx';
-import ContactSupportPolicy from './pages/ContactSupportPolicy.jsx';
-import RefundPolicy from './pages/RefundPolicy.jsx';
-import Careers from './pages/Careers.jsx';
+import { AuthProvider, RequireAuth } from './webapp/AuthContext.jsx';
+import { PopupProvider } from './webapp/PopupContext.jsx';
 import './index.css';
+
+const lazyNamed = (loader, exportName) => lazy(() => loader().then((module) => ({ default: module[exportName] })));
+const About = lazy(() => import('./pages/About.jsx'));
+const Safety = lazy(() => import('./pages/Safety.jsx'));
+const Legal = lazy(() => import('./pages/Legal.jsx'));
+const FAQ = lazy(() => import('./pages/FAQ.jsx'));
+const Contact = lazy(() => import('./pages/Contact.jsx'));
+const Privacy = lazy(() => import('./pages/Privacy.jsx'));
+const Terms = lazy(() => import('./pages/Terms.jsx'));
+const Cookie = lazy(() => import('./pages/Cookie.jsx'));
+const Guidelines = lazy(() => import('./pages/Guidelines.jsx'));
+const IntellectualProperty = lazy(() => import('./pages/IntellectualProperty.jsx'));
+const Prohibited = lazy(() => import('./pages/Prohibited.jsx'));
+const JobPolicy = lazy(() => import('./pages/JobPolicy.jsx'));
+const UGCPolicy = lazy(() => import('./pages/UGCPolicy.jsx'));
+const ModerationPolicy = lazy(() => import('./pages/ModerationPolicy.jsx'));
+const AdsPolicy = lazy(() => import('./pages/AdsPolicy.jsx'));
+const VerificationPolicy = lazy(() => import('./pages/VerificationPolicy.jsx'));
+const BuyerSafety = lazy(() => import('./pages/BuyerSafety.jsx'));
+const SellerSafety = lazy(() => import('./pages/SellerSafety.jsx'));
+const ScamPrevention = lazy(() => import('./pages/ScamPrevention.jsx'));
+const BusinessAccountPolicy = lazy(() => import('./pages/BusinessAccountPolicy.jsx'));
+const ServiceProviderPolicy = lazy(() => import('./pages/ServiceProviderPolicy.jsx'));
+const ContactSupportPolicy = lazy(() => import('./pages/ContactSupportPolicy.jsx'));
+const RefundPolicy = lazy(() => import('./pages/RefundPolicy.jsx'));
+const Careers = lazy(() => import('./pages/Careers.jsx'));
+const WebAppShell = lazy(() => import('./webapp/WebAppShell.jsx'));
+const marketplacePages = () => import('./webapp/pages/MarketplacePages.jsx');
+const jobsCreatorsPages = () => import('./webapp/pages/JobsCreatorsPages.jsx');
+const communityMessagesPages = () => import('./webapp/pages/CommunityMessagesPages.jsx');
+const accountPages = () => import('./webapp/pages/AccountPages.jsx');
+
+const MarketplaceHome = lazyNamed(marketplacePages, 'MarketplaceHome');
+const CategoriesPage = lazyNamed(marketplacePages, 'CategoriesPage');
+const ListingsResultsPage = lazyNamed(marketplacePages, 'ListingsResultsPage');
+const ListingDetailPage = lazyNamed(marketplacePages, 'ListingDetailPage');
+const SellerPage = lazyNamed(marketplacePages, 'SellerPage');
+const SavedProductsPage = lazyNamed(marketplacePages, 'SavedProductsPage');
+const JobsHubPage = lazyNamed(jobsCreatorsPages, 'JobsHubPage');
+const JobsListPage = lazyNamed(jobsCreatorsPages, 'JobsListPage');
+const JobDetailPage = lazyNamed(jobsCreatorsPages, 'JobDetailPage');
+const PostJobPage = lazyNamed(jobsCreatorsPages, 'PostJobPage');
+const MyJobsPage = lazyNamed(jobsCreatorsPages, 'MyJobsPage');
+const EditJobPage = lazyNamed(jobsCreatorsPages, 'EditJobPage');
+const CreatorsPage = lazyNamed(jobsCreatorsPages, 'CreatorsPage');
+const CreatorDetailPage = lazyNamed(jobsCreatorsPages, 'CreatorDetailPage');
+const BecomeCreatorPage = lazyNamed(jobsCreatorsPages, 'BecomeCreatorPage');
+const CommunityPage = lazyNamed(communityMessagesPages, 'CommunityPage');
+const MyCommunityPostsPage = lazyNamed(communityMessagesPages, 'MyCommunityPostsPage');
+const MessagesPage = lazyNamed(communityMessagesPages, 'MessagesPage');
+const NewConversationPage = lazyNamed(communityMessagesPages, 'NewConversationPage');
+const ChatPage = lazyNamed(communityMessagesPages, 'ChatPage');
+const AuthPage = lazyNamed(accountPages, 'AuthPage');
+const ProfilePage = lazyNamed(accountPages, 'ProfilePage');
+const SellPage = lazyNamed(accountPages, 'SellPage');
+const MyListingsPage = lazyNamed(accountPages, 'MyListingsPage');
+const EditListingPage = lazyNamed(accountPages, 'EditListingPage');
+const BoostListingPage = lazyNamed(accountPages, 'BoostListingPage');
+const WalletPage = lazyNamed(accountPages, 'WalletPage');
+const VerificationPage = lazyNamed(accountPages, 'VerificationPage');
 
 const router = createBrowserRouter([
   {
@@ -36,7 +74,7 @@ const router = createBrowserRouter([
     children: [
       {
         index: true,
-        element: <Home />,
+        element: <Navigate to="/app" replace />,
       },
       {
         path: 'about',
@@ -136,10 +174,106 @@ const router = createBrowserRouter([
       },
     ],
   },
+  {
+    path: '/landing',
+    element: <Navigate to="/app" replace />,
+  },
+  {
+    path: '/auth',
+    element: <AuthPage />,
+  },
+  {
+    path: '/app',
+    element: <WebAppShell />,
+    children: [
+      { index: true, element: <MarketplaceHome /> },
+      { path: 'categories', element: <CategoriesPage /> },
+      { path: 'category/:categoryId', element: <ListingsResultsPage categoryOnly /> },
+      { path: 'search', element: <ListingsResultsPage /> },
+      { path: 'listing/:listingId', element: <ListingDetailPage /> },
+      { path: 'seller/:sellerId', element: <SellerPage /> },
+      { path: 'jobs', element: <JobsHubPage /> },
+      { path: 'jobs/find', element: <JobsListPage /> },
+      { path: 'jobs/:jobId', element: <JobDetailPage /> },
+      { path: 'creators', element: <CreatorsPage /> },
+      { path: 'creators/:creatorId', element: <CreatorDetailPage /> },
+      { path: 'community', element: <CommunityPage /> },
+      {
+        path: 'saved',
+        element: <RequireAuth><SavedProductsPage /></RequireAuth>,
+      },
+      {
+        path: 'sell',
+        element: <RequireAuth><SellPage /></RequireAuth>,
+      },
+      {
+        path: 'my-listings',
+        element: <RequireAuth><MyListingsPage /></RequireAuth>,
+      },
+      {
+        path: 'my-listings/:listingId/boost',
+        element: <RequireAuth><BoostListingPage /></RequireAuth>,
+      },
+      {
+        path: 'my-listings/:listingId/edit',
+        element: <RequireAuth><EditListingPage /></RequireAuth>,
+      },
+      {
+        path: 'jobs/post',
+        element: <RequireAuth><PostJobPage /></RequireAuth>,
+      },
+      {
+        path: 'jobs/mine',
+        element: <RequireAuth><MyJobsPage /></RequireAuth>,
+      },
+      {
+        path: 'jobs/:jobId/edit',
+        element: <RequireAuth><EditJobPage /></RequireAuth>,
+      },
+      {
+        path: 'creators/become',
+        element: <RequireAuth><BecomeCreatorPage /></RequireAuth>,
+      },
+      {
+        path: 'community/mine',
+        element: <RequireAuth><MyCommunityPostsPage /></RequireAuth>,
+      },
+      {
+        path: 'messages',
+        element: <RequireAuth><MessagesPage /></RequireAuth>,
+      },
+      {
+        path: 'messages/new',
+        element: <RequireAuth><NewConversationPage /></RequireAuth>,
+      },
+      {
+        path: 'messages/:conversationId',
+        element: <RequireAuth><ChatPage /></RequireAuth>,
+      },
+      {
+        path: 'profile',
+        element: <RequireAuth><ProfilePage /></RequireAuth>,
+      },
+      {
+        path: 'profile/verification',
+        element: <RequireAuth><VerificationPage /></RequireAuth>,
+      },
+      {
+        path: 'wallet',
+        element: <RequireAuth><WalletPage /></RequireAuth>,
+      },
+    ],
+  },
 ]);
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <RouterProvider router={router} />
+    <PopupProvider>
+      <AuthProvider>
+        <Suspense fallback={<div className="route-loader" role="status">Loading Zidash…</div>}>
+          <RouterProvider router={router} />
+        </Suspense>
+      </AuthProvider>
+    </PopupProvider>
   </StrictMode>,
 );

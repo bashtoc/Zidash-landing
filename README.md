@@ -1,16 +1,46 @@
-# React + Vite
+# Zidash Web
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+The Zidash website now centers on the responsive consumer marketplace web app, with supporting policy and information pages.
 
-Currently, two official plugins are available:
+- Visiting `/` launches the consumer web app at `/app`.
+- The retired marketing homepage is no longer public; `/landing` redirects to `/app`. Policy pages remain under `/about`, `/safety`, `/legal`, and the existing policy routes.
+- Google and email OTP authentication are available at `/auth`.
+- The implementation brief and API map are in [`docs/ZIDASH_MOBILE_TO_WEB_REPLICATION_SPEC.md`](docs/ZIDASH_MOBILE_TO_WEB_REPLICATION_SPEC.md).
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Local development
 
-## React Compiler
+Requirements: a current Node.js runtime and the `zidash-backend` API running on port `4000`.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+```bash
+npm install
+npm run dev
+```
 
-## Expanding the Oxlint configuration
+Vite proxies `/api/v1` and `/socket.io` to the configured backend in development. Open the URL printed by Vite to launch the web app.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+## Production configuration
+
+Set `VITE_API_URL` when the API is hosted on another origin:
+
+```env
+VITE_API_URL=https://api.example.com/api/v1
+```
+
+To enable Google sign-in, create an OAuth 2.0 client with the **Web application** type, add the local and deployed web origins to its Authorized JavaScript origins, and set:
+
+```env
+VITE_GOOGLE_CLIENT_ID=your-web-client-id.apps.googleusercontent.com
+```
+
+Add that same Web client ID to the backend's comma-separated `GOOGLE_CLIENT_IDS` value. Keep the existing iOS client ID in that list so both Flutter and web tokens remain valid.
+
+The backend must allow the web origin through CORS and Socket.IO origin settings. For same-origin hosting, leave `VITE_API_URL=/api/v1` and proxy `/api/v1` plus `/socket.io` to the backend at the web server or edge layer.
+
+## Quality checks
+
+```bash
+npm run lint
+npm run build
+```
+
+The built static site is written to `dist/`. Configure production hosting with SPA history fallback so direct links such as `/app/listing/:id` and existing policy URLs resolve to `index.html`.

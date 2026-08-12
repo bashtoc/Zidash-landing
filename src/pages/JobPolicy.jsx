@@ -1,6 +1,6 @@
 export default function JobPolicy() {
   return (
-    <main className="legal-page">
+    <main className="legal-page legal-page--policy">
       <section className="legal-hero">
         <p className="eyebrow">Zidash Policies</p>
         <h1 className="legal-hero-title">Job Posting Policy</h1>

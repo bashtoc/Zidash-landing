@@ -1,60 +1,35 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { footerNavigation } from '../footerNavigation';
+
+function FooterColumn({ title, links }) {
+  const [expanded, setExpanded] = useState(false);
+  const visibleLinks = expanded ? links : links.slice(0, 5);
+
+  return (
+    <div className="footer-col">
+      <h3>{title}</h3>
+      {visibleLinks.map((item) => item.to ? <Link key={item.label} to={item.to}>{item.label}</Link> : <a key={item.label} href={item.href}>{item.label}</a>)}
+      {links.length > 5 && <button type="button" className="footer-see-more" onClick={() => setExpanded((current) => !current)}>{expanded ? 'See less' : 'See more'}</button>}
+    </div>
+  );
+}
 
 export default function Footer() {
   return (
     <footer className="site-footer">
       <div className="footer-main">
-        <Link className="brand" to="/">
-          <img src="/zidashlogo.png" alt="Zidash Logo" className="brand-logo" />
+        <Link className="brand" to="/app">
+          <img src="/goodzidash-logo.png" alt="Zidash Logo" className="brand-logo" />
         </Link>
         <p>Zidash helps people buy and sell items, discover jobs, hire local talent, connect with UGC creators, and build trusted community commerce.</p>
-        <div className="store-buttons small">
+        <div className="store-buttons small" id="download">
           <a href="#" aria-label="Download on the App Store"><img src="/downloadapple.png" alt="Download on the App Store" className="store-badge" /></a>
           <a href="#" aria-label="Get it on Google Play"><img src="/downloadplaystore.png" alt="Get it on Google Play" className="store-badge" /></a>
         </div>
       </div>
       <div className="footer-links" aria-label="Footer navigation">
-        <div className="footer-col">
-          <h3>Company</h3>
-          <Link to="/about">About Zidash</Link>
-          <Link to="/careers">Careers</Link>
-          <a href="mailto:info@zidash.com">General Enquiries</a>
-          <a href="mailto:support@zidash.com">Customer Support</a>
-          <a href="mailto:partnership@zidash.com">Business Partnerships</a>
-        </div>
-        <div className="footer-col">
-          <h3>Safety</h3>
-          <Link to="/safety">Safety Center</Link>
-          <Link to="/buyer-safety">Buyer Safety Guide</Link>
-          <Link to="/seller-safety">Seller Safety Guide</Link>
-          <Link to="/scam-prevention">Scam Prevention Guide</Link>
-          <Link to="/verification-policy">Verification Policy</Link>
-          <Link to="/contact">Report a Problem</Link>
-        </div>
-        <div className="footer-col">
-          <h3>Legal</h3>
-          <Link to="/legal">Legal Center</Link>
-          <Link to="/terms">Terms of Use</Link>
-          <Link to="/privacy">Privacy Policy</Link>
-          <Link to="/cookie">Cookie Policy</Link>
-          <Link to="/guidelines">Community Guidelines</Link>
-          <Link to="/ip-policy">Intellectual Property Policy</Link>
-          <Link to="/prohibited">Prohibited Items Policy</Link>
-          <Link to="/ads-policy">Advertising & Boost Policy</Link>
-          <Link to="/refund-policy">Refund Policy</Link>
-          <Link to="/business-policy">Business Account Policy</Link>
-          <Link to="/service-policy">Service Provider Policy</Link>
-          <Link to="/job-policy">Job Posting Policy</Link>
-          <Link to="/ugc-policy">UGC Creator Policy</Link>
-          <Link to="/moderation-policy">Content Moderation Policy</Link>
-        </div>
-        <div className="footer-col">
-          <h3>Support</h3>
-          <Link to="/faq">Help Center / FAQ</Link>
-          <Link to="/contact">Contact Support</Link>
-          <Link to="/contact">Report Abuse</Link>
-          <Link to="/contact-policy">Contact & Support Policy</Link>
-        </div>
+        {footerNavigation.map((column) => <FooterColumn key={column.title} {...column} />)}
       </div>
       <div className="footer-bottom">
         <p className="copyright">Copyright &copy; {new Date().getFullYear()} Zidash. All rights reserved.</p>

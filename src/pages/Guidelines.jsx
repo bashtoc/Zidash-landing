@@ -1,6 +1,6 @@
 export default function Guidelines() {
   return (
-    <main className="legal-page">
+    <main className="legal-page legal-page--policy">
       <section className="legal-hero">
         <p className="eyebrow">Zidash Policies</p>
         <h1 className="legal-hero-title">Community Guidelines</h1>

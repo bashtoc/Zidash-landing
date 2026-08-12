@@ -1,6 +1,6 @@
 export default function FAQ() {
   return (
-    <main className="legal-page">
+    <main className="legal-page legal-page--faq">
       <section className="legal-hero reveal-on-scroll">
         <p className="eyebrow">Help & Support</p>
         <h1 className="legal-hero-title">Frequently Asked Questions (FAQ)</h1>
@@ -126,6 +126,10 @@ export default function FAQ() {
           </ul>
           <p>If your question is not answered above, please contact us, and our team will be happy to assist you.</p>
         </details>
+      </section>
+      <section className="faq-support-card">
+        <div><p>Still need a hand?</p><h2>Talk to the Zidash support team.</h2></div>
+        <a href="mailto:support@zidash.com">support@zidash.com</a>
       </section>
     </main>
   );
