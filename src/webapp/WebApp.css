@@ -84,6 +84,7 @@
 .app-page p { color: var(--z-muted); }
 .app-page-intro { display: flex; align-items: flex-end; justify-content: space-between; gap: 28px; margin-bottom: 28px; }
 .app-page-intro h1 { max-width: 780px; margin: 6px 0 8px; font-size: clamp(29px, 4vw, 40px); line-height: 1.05; }
+.categories-page .app-page-intro h1 { font-weight: 400; }
 .app-page-intro p { max-width: 680px; margin: 0; font-size: 15px; }
 .app-eyebrow { display: inline-flex; align-items: center; gap: 5px; color: var(--z-green-dark); font-family: Roboto, sans-serif; font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
 .app-page-actions { display: flex; gap: 9px; }
