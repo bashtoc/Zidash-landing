@@ -2867,6 +2867,87 @@ details p {
   font: 600 18px/1.4 'Roboto', sans-serif;
 }
 
+.route-error {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  color: #122014;
+  background: #f6faf6;
+  font-family: 'Roboto', sans-serif;
+}
+
+.route-error__card {
+  width: min(100%, 520px);
+  padding: clamp(28px, 6vw, 48px);
+  background: #fff;
+  border: 1px solid #dce8da;
+  border-radius: 24px;
+  box-shadow: 0 24px 60px rgba(27, 72, 24, .1);
+}
+
+.route-error__card > img {
+  width: 145px;
+  height: auto;
+  display: block;
+  margin-bottom: 34px;
+  object-fit: contain;
+}
+
+.route-error__eyebrow {
+  margin: 0 0 8px;
+  color: #359619;
+  font-size: .78rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.route-error__card h1 {
+  margin: 0 0 12px;
+  color: #122014;
+  font-size: clamp(1.75rem, 5vw, 2.4rem);
+  font-weight: 500;
+  line-height: 1.12;
+}
+
+.route-error__card > p:not(.route-error__eyebrow) {
+  margin: 0;
+  color: #667268;
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+.route-error__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 28px;
+}
+
+.route-error__actions button,
+.route-error__actions a {
+  min-height: 46px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 18px;
+  border: 1px solid #359619;
+  border-radius: 999px;
+  font: 500 .92rem/1 'Roboto', sans-serif;
+  cursor: pointer;
+}
+
+.route-error__actions button {
+  color: #fff;
+  background: #359619;
+}
+
+.route-error__actions a {
+  color: #267612;
+  background: #fff;
+}
+
 /* Modern About page */
 .about-modern {
   overflow: hidden;

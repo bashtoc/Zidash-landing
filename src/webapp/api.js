@@ -179,6 +179,16 @@ export const api = {
       auth: true,
     })
   },
+  sellerRatingStatus(id) {
+    return apiRequest(`/app/seller-profiles/${encodeURIComponent(id)}/rating`, { auth: true })
+  },
+  rateSeller(id, score) {
+    return apiRequest(`/app/seller-profiles/${encodeURIComponent(id)}/rating`, {
+      method: 'PUT',
+      body: JSON.stringify({ score }),
+      auth: true,
+    })
+  },
   createListing(payload) {
     return apiRequest('/app/listings', { method: 'POST', body: JSON.stringify(payload), auth: true })
   },

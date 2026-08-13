@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from 'react'
-import { BadgeCheck, ChevronRight, Heart, MapPin, MessageCircle, MoreHorizontal, Plus, Send, Store, Trash2, UsersRound } from 'lucide-react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { BadgeCheck, ChevronRight, Heart, ImagePlus, MapPin, MessageCircle, MoreHorizontal, Plus, Send, Store, Trash2, UsersRound, X } from 'lucide-react'
 import { io } from 'socket.io-client'
 import { Link, useLocation, useNavigate, useOutletContext, useParams } from 'react-router-dom'
 import { API_BASE, api, getStoredSession, unwrapItems } from '../api'
@@ -35,7 +35,7 @@ function CommunityCard({ post }) {
 
   async function submitReport(reason) { setReporting(true); try { await api.report({ reporterId: auth.user.id, subjectType: 'post', subjectId: post.id, reason, details: 'Reported from the Zidash web community feed' }); setReportOpen(false); showPopup({ tone: 'success', message: 'Post reported. Thank you.' }) } catch (error) { showPopup({ tone: 'error', message: error.message }) } finally { setReporting(false) } }
 
-  return <><article className="community-card"><header><Avatar name={authorName} src={post.author?.avatarUrl} /><div><strong>{authorName} {post.author?.identityVerifiedAt && <BadgeCheck size={15} />}</strong><span><MapPin size={12} /> {post.location || 'Nigeria'} · {relativeTime(post.createdAt)}</span></div><button type="button" onClick={report} aria-label="Report community post"><MoreHorizontal size={20} /></button></header><div className="community-card__copy"><h2>{item.title || 'Community post'}</h2>{item.description && <p>{item.description}</p>}{item.price !== undefined && <strong className="community-price">{money(item.price, item.currency)}</strong>}</div>{image && <img className="community-card__image" src={image} alt={item.title || 'Community post'} loading="lazy" />}<footer><button type="button" className={liked ? 'is-active' : ''} onClick={toggleLike}><Heart size={18} fill={liked ? 'currentColor' : 'none'} /> {likes}</button><button type="button"><MessageCircle size={18} /> {post.commentsCount || 0}</button>{post.author?.id && <Link to={`/app/messages/new`} state={{ sellerId: post.author.id, sellerName: authorName }}><Send size={18} /> Message</Link>}</footer></article>{reportOpen && <ReportDialog title="Report community post" subjectLabel="post" submitting={reporting} onClose={() => setReportOpen(false)} onSubmit={submitReport} />}</>
+  return <><article className="community-card"><header><Avatar name={authorName} src={post.author?.avatarUrl} /><div><strong>{authorName} {post.author?.identityVerifiedAt && <BadgeCheck size={15} />}</strong><span><MapPin size={12} /> {post.location || 'Nigeria'} · {relativeTime(post.createdAt)}</span></div><button type="button" onClick={report} aria-label="Report community post"><MoreHorizontal size={20} /></button></header><div className="community-card__copy"><h2>{item.title || 'Community post'}</h2>{item.description && <p>{item.description}</p>}{item.price !== undefined && <strong className="community-price">{money(item.price, item.currency)}</strong>}</div>{image && <img className="community-card__image" src={image} alt={item.title || 'Community post'} loading="lazy" />}<footer><button type="button" className={liked ? 'is-active' : ''} onClick={toggleLike}><Heart size={18} fill={liked ? 'currentColor' : 'none'} /> {likes}</button>{post.author?.id && <Link to={`/app/messages/new`} state={{ sellerId: post.author.id, sellerName: authorName }}><Send size={18} /> Message</Link>}</footer></article>{reportOpen && <ReportDialog title="Report community post" subjectLabel="post" submitting={reporting} onClose={() => setReportOpen(false)} onSubmit={submitReport} />}</>
 }
 
 export function CommunityPage() {
@@ -87,7 +87,7 @@ function conversationName(conversation) {
 
 export function MessagesPage() {
   const state = useRemote(() => api.conversations(), [])
-  return <div className="app-page messages-page"><PageIntro eyebrow="Inbox" title="Messages" description="Your marketplace, job, and creator conversations." />{state.loading ? <LoadingState label="Loading messages" /> : state.error ? <ErrorState message={state.error} retry={state.reload} /> : unwrapItems(state).length ? <div className="conversation-list">{unwrapItems(state).map((conversation) => <Link key={conversation.id} to={`/app/messages/${conversation.id}`}><Avatar name={conversationName(conversation)} src={conversation.otherUser?.avatarUrl} size="large" /><div><div><strong>{conversationName(conversation)}</strong><span>{relativeTime(conversation.lastMessageAt)}</span></div><p>{conversation.lastMessage?.body || 'Open conversation'}</p>{conversation.listing?.title && <small><Store size={12} /> {conversation.listing.title}</small>}</div>{conversation.unreadCount > 0 && <em>{conversation.unreadCount}</em>}<ChevronRight size={18} /></Link>)}</div> : <EmptyState icon={MessageCircle} title="No messages yet" message="When you message a seller, the conversation appears here." action={<Link className="app-button app-button--primary" to="/app">Browse products</Link>} />}</div>
+  return <div className="app-page messages-page"><PageIntro eyebrow="Inbox" title="Messages" description="Your marketplace, job, and creator conversations." />{state.loading ? <LoadingState label="Loading messages" /> : state.error ? <ErrorState message={state.error} retry={state.reload} /> : unwrapItems(state).length ? <div className="conversation-list">{unwrapItems(state).map((conversation) => <Link key={conversation.id} to={`/app/messages/${conversation.id}`}><Avatar name={conversationName(conversation)} src={conversation.otherUser?.avatarUrl} size="large" /><div><div><strong>{conversationName(conversation)}</strong><span>{relativeTime(conversation.lastMessageAt)}</span></div><p>{conversation.lastMessage?.body || (conversation.lastMessage?.type === 'image' ? 'Photo' : 'Open conversation')}</p>{conversation.listing?.title && <small><Store size={12} /> {conversation.listing.title}</small>}</div>{conversation.unreadCount > 0 && <em>{conversation.unreadCount}</em>}<ChevronRight size={18} /></Link>)}</div> : <EmptyState icon={MessageCircle} title="No messages yet" message="When you message a seller, the conversation appears here." action={<Link className="app-button app-button--primary" to="/app">Browse products</Link>} />}</div>
 }
 
 export function NewConversationPage() {
@@ -102,7 +102,7 @@ export function NewConversationPage() {
     try { const response = await api.startConversation({ sellerId: target.sellerId, listingId: target.listingId, message: body }); const conversation = response.data?.conversation || response.data; navigate(`/app/messages/${conversation.id}`, { replace: true }) } catch (error) { showPopup({ tone: 'error', message: error.message }) } finally { setSending(false) }
   }
   if (!target.sellerId && !target.listingId) return <div className="app-page"><EmptyState title="Choose someone to message" message="Open a product or community post and select Message." /></div>
-  return <div className="app-page chat-page"><header className="chat-header"><Avatar name={target.sellerName || 'Seller'} /><div><h1>{target.sellerName || 'Start a conversation'}</h1><p>{target.listingTitle || 'Zidash member'}</p></div></header><SecurityNotice /><div className="new-chat-empty"><MessageCircle size={35} /><h2>Start the conversation</h2><p>Ask a clear question and avoid making payment to an unverified merchant.</p></div><form className="chat-composer" onSubmit={send}><input name="message" placeholder="Write a message…" autoFocus /><button disabled={sending} type="submit" aria-label="Send message"><Send size={19} /></button></form></div>
+  return <div className="app-page chat-page"><header className="chat-header"><Avatar name={target.sellerName || 'Seller'} /><div><h1>{target.sellerName || 'Start a conversation'}</h1><p>{target.listingTitle || 'Zidash member'}</p></div></header><SecurityNotice /><div className="new-chat-empty"><MessageCircle size={35} /><h2>Start the conversation</h2><p>Ask a clear question and avoid making payment to an unverified merchant.</p></div><form className="chat-composer" onSubmit={send}><input name="message" placeholder="Write a message…" autoFocus /><button className="chat-composer__send" disabled={sending} type="submit" aria-label="Send message"><Send size={19} /></button></form></div>
 }
 
 export function ChatPage() {
@@ -111,15 +111,31 @@ export function ChatPage() {
   const { showPopup } = usePopup()
   const state = useRemote(() => api.conversationMessages(conversationId), [conversationId])
   const [messages, setMessages] = useState([])
+  const [attachments, setAttachments] = useState([])
   const [sending, setSending] = useState(false)
-  const endRef = useRef(null)
+  const threadRef = useRef(null)
+  const hasPositionedThreadRef = useRef(false)
+  const fileInputRef = useRef(null)
+  const messageInputRef = useRef(null)
+  const attachmentsRef = useRef([])
   const payload = state.data
   const conversation = payload?.conversation
   const other = conversation?.otherUser || (conversation?.buyerId === auth.user?.id ? conversation?.seller : conversation?.buyer)
   const otherName = `${other?.firstName || ''} ${other?.lastName || ''}`.trim() || 'Zidash member'
 
   useEffect(() => { if (Array.isArray(payload?.messages)) setMessages(payload.messages) }, [payload])
-  useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages.length])
+  useLayoutEffect(() => {
+    const thread = threadRef.current
+    if (!thread || !messages.length) return
+    thread.scrollTo({
+      top: thread.scrollHeight,
+      behavior: hasPositionedThreadRef.current ? 'smooth' : 'auto',
+    })
+    hasPositionedThreadRef.current = true
+  }, [messages.length])
+  useEffect(() => { hasPositionedThreadRef.current = false }, [conversationId])
+  useEffect(() => { attachmentsRef.current = attachments }, [attachments])
+  useEffect(() => () => attachmentsRef.current.forEach((attachment) => URL.revokeObjectURL(attachment.previewUrl)), [])
   useEffect(() => {
     const token = getStoredSession()?.accessToken
     if (!token) return undefined
@@ -131,15 +147,69 @@ export function ChatPage() {
     return () => { socket.off('message:new', onMessage); socket.disconnect() }
   }, [conversationId])
 
+  function selectImages(event) {
+    const selected = Array.from(event.target.files || [])
+    event.target.value = ''
+    const images = selected.filter((file) => ['image/jpeg', 'image/png', 'image/webp'].includes(file.type))
+    if (images.length !== selected.length) showPopup({ tone: 'warning', message: 'Choose JPEG, PNG, or WebP images only.' })
+    const availableSlots = Math.max(0, 8 - attachments.length)
+    if (images.length > availableSlots) showPopup({ tone: 'warning', message: 'You can send up to 8 images at a time.' })
+    const additions = images.slice(0, availableSlots).map((file) => ({
+      id: `${file.name}-${file.lastModified}-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      file,
+      previewUrl: URL.createObjectURL(file),
+    }))
+    if (additions.length) setAttachments((current) => [...current, ...additions])
+  }
+
+  function removeAttachment(id) {
+    setAttachments((current) => current.filter((attachment) => {
+      if (attachment.id !== id) return true
+      URL.revokeObjectURL(attachment.previewUrl)
+      return false
+    }))
+  }
+
+  function appendMessage(message) {
+    setMessages((current) => current.some((item) => item.id === message.id) ? current : [...current, message])
+  }
+
   async function send(event) {
-    event.preventDefault(); const form = event.currentTarget; const body = new FormData(form).get('message')?.trim(); if (!body || sending) return
+    event.preventDefault()
+    const form = event.currentTarget
+    const body = new FormData(form).get('message')?.trim()
+    if ((!body && !attachments.length) || sending) return
     setSending(true)
-    try { const response = await api.sendMessage(conversationId, { type: 'text', body }); const message = response.data; setMessages((current) => current.some((item) => item.id === message.id) ? current : [...current, message]); form.reset() } catch (error) { showPopup({ tone: 'error', message: error.message }) } finally { setSending(false) }
+    try {
+      if (attachments.length) {
+        const selectedAttachments = [...attachments]
+        const urls = await api.upload(selectedAttachments.map((attachment) => attachment.file))
+        if (urls.length !== selectedAttachments.length) throw new Error('One or more images could not be uploaded.')
+        for (let index = 0; index < urls.length; index += 1) {
+          const response = await api.sendMessage(conversationId, {
+            type: 'image',
+            mediaUrl: urls[index],
+            ...(index === 0 && body ? { body } : {}),
+          })
+          appendMessage(response.data)
+          removeAttachment(selectedAttachments[index].id)
+          if (index === 0 && body && messageInputRef.current) messageInputRef.current.value = ''
+        }
+      } else {
+        const response = await api.sendMessage(conversationId, { type: 'text', body })
+        appendMessage(response.data)
+      }
+      form.reset()
+    } catch (error) {
+      showPopup({ tone: 'error', message: error.message })
+    } finally {
+      setSending(false)
+    }
   }
 
   if (state.loading) return <div className="app-page"><LoadingState label="Opening conversation" /></div>
   if (state.error) return <div className="app-page"><ErrorState message={state.error} retry={state.reload} /></div>
   const storeId = other?.sellerProfile?.id
   const identity = <><Avatar name={otherName} src={other?.avatarUrl} /><div><h1>{otherName}</h1>{conversation?.listing?.title && <p>{conversation.listing.title}</p>}</div><Store className="chat-user-link__store" size={17} /></>
-  return <div className="app-page chat-page"><header className="chat-header">{storeId ? <Link className="chat-user-link" to={`/app/seller/${storeId}`} aria-label={`Open ${otherName}'s store`}>{identity}</Link> : <button className="chat-user-link" type="button" onClick={() => showPopup({ tone: 'warning', title: 'Seller profile not available', message: 'This user has not created a public store profile yet.' })}>{identity}</button>}</header><SecurityNotice /><div className="chat-thread">{messages.map((message) => { const mine = message.senderId === (payload?.currentUserId || auth.user?.id); return <div key={message.id} className={`chat-bubble ${mine ? 'is-mine' : ''}`}>{message.type === 'image' && message.mediaUrl && <img src={message.mediaUrl} alt="Shared attachment" />}{message.body && <p>{message.body}</p>}<span>{relativeTime(message.createdAt)}</span></div> })}<div ref={endRef} /></div><form className="chat-composer" onSubmit={send}><input name="message" placeholder="Write a message…" autoComplete="off" /><button disabled={sending} type="submit" aria-label="Send message"><Send size={19} /></button></form></div>
+  return <div className="app-page chat-page"><header className="chat-header">{storeId ? <Link className="chat-user-link" to={`/app/seller/${storeId}`} aria-label={`Open ${otherName}'s store`}>{identity}</Link> : <button className="chat-user-link" type="button" onClick={() => showPopup({ tone: 'warning', title: 'Seller profile not available', message: 'This user has not created a public store profile yet.' })}>{identity}</button>}</header><SecurityNotice /><div ref={threadRef} className="chat-thread">{messages.map((message) => { const mine = message.senderId === (payload?.currentUserId || auth.user?.id); return <div key={message.id} className={`chat-bubble ${mine ? 'is-mine' : ''}`}>{message.type === 'image' && message.mediaUrl && <img src={message.mediaUrl} alt="Shared attachment" loading="lazy" />}{message.body && <p>{message.body}</p>}<span>{relativeTime(message.createdAt)}</span></div> })}</div><form className={`chat-composer ${attachments.length ? 'has-attachments' : ''}`} onSubmit={send}>{attachments.length > 0 && <div className="chat-attachment-previews" aria-label="Selected images">{attachments.map((attachment) => <figure key={attachment.id}><img src={attachment.previewUrl} alt={attachment.file.name} /><button type="button" onClick={() => removeAttachment(attachment.id)} aria-label={`Remove ${attachment.file.name}`}><X size={14} /></button></figure>)}</div>}<input ref={fileInputRef} className="chat-composer__file" type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={selectImages} /><button className="chat-composer__attach" disabled={sending || attachments.length >= 8} type="button" onClick={() => fileInputRef.current?.click()} aria-label="Select images"><ImagePlus size={20} /></button><input ref={messageInputRef} name="message" placeholder={attachments.length ? 'Add a message…' : 'Write a message…'} autoComplete="off" /><button className="chat-composer__send" disabled={sending} type="submit" aria-label={sending ? 'Sending message' : 'Send message'}><Send size={19} /></button></form></div>
 }

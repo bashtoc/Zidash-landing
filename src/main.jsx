@@ -1,11 +1,84 @@
 /* oxlint-disable react/only-export-components -- this is the application entry point and route manifest. */
-import { lazy, StrictMode, Suspense } from 'react';
+import { lazy, StrictMode, Suspense, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
-import { createBrowserRouter, Navigate, RouterProvider } from 'react-router-dom';
+import {
+  createBrowserRouter,
+  isRouteErrorResponse,
+  Navigate,
+  RouterProvider,
+  useRouteError,
+} from 'react-router-dom';
 import App from './App.jsx';
 import { AuthProvider, RequireAuth } from './webapp/AuthContext.jsx';
 import { PopupProvider } from './webapp/PopupContext.jsx';
 import './index.css';
+
+const CHUNK_LOAD_ERROR = /ChunkLoadError|Failed to fetch dynamically imported module|Importing a module script failed|error loading dynamically imported module|Loading chunk .* failed/i;
+
+function getErrorMessage(error) {
+  if (error instanceof Error) return error.message;
+  if (typeof error === 'string') return error;
+  if (error && typeof error === 'object' && typeof error.message === 'string') return error.message;
+  return '';
+}
+
+function isChunkLoadError(error) {
+  return CHUNK_LOAD_ERROR.test(getErrorMessage(error));
+}
+
+function refreshAfterStaleChunk(error) {
+  if (!isChunkLoadError(error)) return false;
+
+  const message = getErrorMessage(error);
+  const assetUrl = message.match(/https?:\/\/\S+|\/assets\/\S+/)?.[0] || message;
+  const marker = `zidash:stale-chunk:${assetUrl.slice(-220)}`;
+
+  try {
+    if (window.sessionStorage.getItem(marker)) return false;
+    window.sessionStorage.setItem(marker, 'reloaded');
+  } catch {
+    // If storage is unavailable, avoid risking a reload loop and show the error UI.
+    return false;
+  }
+
+  window.location.reload();
+  return true;
+}
+
+function RouteErrorPage() {
+  const error = useRouteError();
+  const staleChunk = isChunkLoadError(error);
+  const notFound = isRouteErrorResponse(error) && error.status === 404;
+
+  useEffect(() => {
+    if (staleChunk) refreshAfterStaleChunk(error);
+  }, [error, staleChunk]);
+
+  return (
+    <main className="route-error" role="alert">
+      <section className="route-error__card">
+        <img src="/goodzidash.png" alt="Zidash" />
+        <p className="route-error__eyebrow">{notFound ? 'Page not found' : 'Let’s get you back in'}</p>
+        <h1>{staleChunk ? 'Zidash was just updated' : 'This page could not be loaded'}</h1>
+        <p>
+          {staleChunk
+            ? 'Refresh to load the latest version of the app.'
+            : 'Please refresh the page. If the problem continues, return to the marketplace.'}
+        </p>
+        <div className="route-error__actions">
+          <button type="button" onClick={() => window.location.reload()}>Refresh page</button>
+          <a href="/app">Go to marketplace</a>
+        </div>
+      </section>
+    </main>
+  );
+}
+
+window.addEventListener('vite:preloadError', (event) => {
+  if (refreshAfterStaleChunk(event.payload)) {
+    event.preventDefault();
+  }
+});
 
 const lazyNamed = (loader, exportName) => lazy(() => loader().then((module) => ({ default: module[exportName] })));
 const About = lazy(() => import('./pages/About.jsx'));
@@ -71,6 +144,7 @@ const router = createBrowserRouter([
   {
     path: '/',
     element: <App />,
+    errorElement: <RouteErrorPage />,
     children: [
       {
         index: true,
@@ -181,10 +255,12 @@ const router = createBrowserRouter([
   {
     path: '/auth',
     element: <AuthPage />,
+    errorElement: <RouteErrorPage />,
   },
   {
     path: '/app',
     element: <WebAppShell />,
+    errorElement: <RouteErrorPage />,
     children: [
       { index: true, element: <MarketplaceHome /> },
       { path: 'categories', element: <CategoriesPage /> },

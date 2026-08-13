@@ -107,16 +107,20 @@ export function MarketplaceSearch({ initialQuery = '', onSubmit, filters, onFilt
   </form>
 }
 
-export function ReportDialog({ title, subjectLabel = 'item', submitting = false, onClose, onSubmit }) {
+export function ReportDialog({ title, subjectLabel = 'item', submitting = false, requireOtherDetails = false, onClose, onSubmit }) {
   const [reason, setReason] = useState(REPORT_REASONS[0])
+  const [details, setDetails] = useState('')
+  const needsDetails = requireOtherDetails && reason === 'Other'
+  const submitDisabled = submitting || (needsDetails && !details.trim())
   return <div className="app-modal-scrim" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
-    <section className="app-modal report-dialog" role="dialog" aria-modal="true" aria-labelledby="report-dialog-title">
+    <form className="app-modal report-dialog" role="dialog" aria-modal="true" aria-labelledby="report-dialog-title" onSubmit={(event) => { event.preventDefault(); if (!submitDisabled) onSubmit(reason, details.trim()) }}>
       <button className="app-modal__close" type="button" onClick={onClose} aria-label="Close report form">×</button>
       <h2 id="report-dialog-title">{title}</h2>
       <p>Tell us why you are reporting this {subjectLabel}. Our moderation team will review it.</p>
       <div className="report-reasons">{REPORT_REASONS.map((item) => <label key={item} className={reason === item ? 'is-selected' : ''}><input type="radio" name="reportReason" value={item} checked={reason === item} onChange={() => setReason(item)} /><span>{item}</span></label>)}</div>
-      <div className="report-dialog__actions"><button type="button" className="app-button app-button--ghost" onClick={onClose}>Cancel</button><button type="button" className="app-button app-button--primary" disabled={submitting} onClick={() => onSubmit(reason)}>{submitting ? 'Submitting…' : 'Submit report'}</button></div>
-    </section>
+      {needsDetails && <label className="report-dialog__details">Describe the issue<textarea value={details} onChange={(event) => setDetails(event.target.value)} maxLength="1000" rows="4" placeholder={`Tell us what happened with this ${subjectLabel}`} required autoFocus /><small>{details.length}/1000</small></label>}
+      <div className="report-dialog__actions"><button type="button" className="app-button app-button--ghost" onClick={onClose}>Cancel</button><button type="submit" className="app-button app-button--primary" disabled={submitDisabled}>{submitting ? 'Submitting…' : 'Submit report'}</button></div>
+    </form>
   </div>
 }
 

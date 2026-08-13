@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Armchair, ArrowLeft, Baby, BadgeCheck, BookOpen, Boxes, BriefcaseBusiness, CarFront, ChevronRight, CircleAlert, Dumbbell, Gamepad2, Gift, HardHat, House, ImageOff, MapPin, MessageCircle, Monitor, PawPrint, Phone, ShieldCheck, Shirt, ShoppingBasket, Smartphone, Sparkles, Star, Store, Sun, Tractor, UsersRound, Wrench } from 'lucide-react'
+import { Armchair, ArrowLeft, Baby, BadgeCheck, BookOpen, Boxes, BriefcaseBusiness, CarFront, ChevronRight, CircleAlert, Dumbbell, Gamepad2, Gift, HardHat, House, ImageOff, MapPin, MessageCircle, Monitor, PawPrint, Phone, ShieldCheck, Shirt, ShoppingBasket, Smartphone, Sparkles, Star, Store, Sun, Tractor, UsersRound, Wrench, X } from 'lucide-react'
 import { Link, useNavigate, useOutletContext, useParams, useSearchParams } from 'react-router-dom'
 import { api, unwrapItems } from '../api'
 import { useAuth } from '../auth-context'
@@ -222,6 +222,69 @@ export function ListingsResultsPage({ categoryOnly = false }) {
   return <div className={`app-page${categoryOnly ? ' category-results-page' : ''}`}><PageIntro eyebrow="Marketplace" title={categoryOnly ? categoryLabel(selectedCategory?.name) || 'Category listings' : filters.q ? `Results for “${filters.q}”` : 'Search marketplace'} description="Search, filter, and sort listings from the live Zidash marketplace." /><MarketplaceSearch initialQuery={filters.q} onSubmit={(query) => updateFilters({ q: query })} filters={filters} onFiltersChange={updateFilters} categories={categories} />{state.loading ? <LoadingState label="Searching listings" /> : state.error ? <ErrorState message={state.error} retry={state.reload} /> : <><ListingGrid listings={unwrapItems(state)} /><Pagination page={state.meta?.page || page} pages={state.meta?.pages || 1} onPage={(next) => { const params = new URLSearchParams(searchParams); params.set('page', next); setSearchParams(params); window.scrollTo({ top: 0, behavior: 'smooth' }) }} /></>}</div>
 }
 
+function SellerRatingControl({ sellerId, returnTo, onMetricsChange }) {
+  const auth = useAuth()
+  const navigate = useNavigate()
+  const { showPopup } = usePopup()
+  const [score, setScore] = useState(0)
+  const [hoveredScore, setHoveredScore] = useState(0)
+  const [busy, setBusy] = useState(false)
+  const ownSellerId = auth.bootstrap?.sellerProfile?.id
+  const [isOwnStore, setIsOwnStore] = useState(ownSellerId === sellerId)
+
+  useEffect(() => {
+    let cancelled = false
+    setScore(0)
+    setIsOwnStore(ownSellerId === sellerId)
+    if (!sellerId || !auth.isAuthenticated) return () => { cancelled = true }
+    api.sellerRatingStatus(sellerId).then((response) => {
+      if (cancelled) return
+      const data = response.data || {}
+      setScore(Number(data.score || 0))
+      setIsOwnStore(Boolean(data.isOwnStore))
+      onMetricsChange?.({
+        ratingAverage: Number(data.ratingAverage || 0),
+        ratingCount: Number(data.ratingCount || 0),
+        trustScore: Number(data.trustScore || 0),
+      })
+    }).catch(() => {})
+    return () => { cancelled = true }
+  }, [auth.isAuthenticated, onMetricsChange, ownSellerId, sellerId])
+
+  async function submitRating(nextScore) {
+    if (!auth.isAuthenticated) {
+      navigate(`/auth?returnTo=${encodeURIComponent(returnTo)}`)
+      return
+    }
+    if (busy || isOwnStore) return
+    setBusy(true)
+    try {
+      const response = await api.rateSeller(sellerId, nextScore)
+      const data = response.data || {}
+      setScore(Number(data.score || nextScore))
+      onMetricsChange?.({
+        ratingAverage: Number(data.ratingAverage || 0),
+        ratingCount: Number(data.ratingCount || 0),
+        trustScore: Number(data.trustScore || 0),
+      })
+      showPopup({ tone: 'success', message: score ? 'Your seller rating was updated.' : 'Your seller rating was submitted.' })
+    } catch (error) {
+      showPopup({ tone: 'error', title: 'Rating not saved', message: error.message })
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  if (!sellerId || isOwnStore) return null
+  const visibleScore = hoveredScore || score
+  return <div className="seller-rating">
+    <span>{score ? 'Your rating' : 'Rate this seller'}</span>
+    <div className="seller-rating__stars" role="group" aria-label="Rate this seller from 1 to 5 stars" onMouseLeave={() => setHoveredScore(0)}>
+      {[1, 2, 3, 4, 5].map((value) => <button key={value} type="button" className={value <= visibleScore ? 'is-active' : ''} disabled={busy} aria-label={`${value} star${value === 1 ? '' : 's'}`} aria-pressed={score === value} onMouseEnter={() => setHoveredScore(value)} onFocus={() => setHoveredScore(value)} onBlur={() => setHoveredScore(0)} onClick={() => submitRating(value)}><Star size={19} fill="currentColor" /></button>)}
+    </div>
+  </div>
+}
+
 export function ListingDetailPage() {
   const { listingId } = useParams()
   const auth = useAuth()
@@ -234,8 +297,13 @@ export function ListingDetailPage() {
   const [reportTarget, setReportTarget] = useState(null)
   const [reporting, setReporting] = useState(false)
   const [selectedImageUrl, setSelectedImageUrl] = useState('')
+  const [sellerMetrics, setSellerMetrics] = useState(null)
+  const updateSellerMetrics = useCallback((metrics) => setSellerMetrics(metrics), [])
 
-  useEffect(() => setSelectedImageUrl(''), [listingId])
+  useEffect(() => {
+    setSelectedImageUrl('')
+    setSellerMetrics(null)
+  }, [listingId])
 
   async function messageSeller() {
     if (!auth.isAuthenticated) return navigate(`/auth?returnTo=${encodeURIComponent(`/app/listing/${listingId}`)}`)
@@ -254,13 +322,13 @@ export function ListingDetailPage() {
     setReportTarget(target)
   }
 
-  async function submitReport(reason) {
+  async function submitReport(reason, otherDetails = '') {
     const subjectType = reportTarget === 'seller' ? 'seller' : 'listing'
     const subjectId = reportTarget === 'seller' ? sellerId : listingId
     if (!subjectId) return
     setReporting(true)
     try {
-      await api.report({ reporterId: auth.user.id, subjectType, subjectId, reason, details: `Reported from the Zidash web listing page` })
+      await api.report({ reporterId: auth.user.id, subjectType, subjectId, reason, details: reason === 'Other' && subjectType === 'seller' ? otherDetails : 'Reported from the Zidash web listing page' })
       setReportTarget(null)
       showPopup({ tone: 'success', message: `${subjectType === 'seller' ? 'Seller' : 'Product'} reported. Thank you.` })
     } catch (error) { showPopup({ tone: 'error', message: error.message }) } finally { setReporting(false) }
@@ -272,6 +340,10 @@ export function ListingDetailPage() {
   const image = selectedImageUrl || listingImage(listing)
   const phone = listing.seller?.user?.phone || listing.sellerProfile?.user?.phone || listing.sellerPhone
   const filteredSimilar = unwrapItems(similar).filter((item) => item.id !== listing.id).slice(0, 4)
+  const trustScore = Number(sellerMetrics?.trustScore ?? listing.seller?.trustScore ?? 0)
+  const ratingAverage = Number(sellerMetrics?.ratingAverage ?? listing.seller?.ratingAverage ?? 0)
+  const ratingCount = Number(sellerMetrics?.ratingCount ?? listing.seller?.ratingCount ?? 0)
+  const ratingLabel = ratingAverage > 0 ? ratingAverage.toFixed(2) : 'New'
 
   return <div className="app-page listing-detail-page">
     <button className="back-link" type="button" onClick={() => navigate(-1)}><ArrowLeft size={17} /> Back</button>
@@ -279,9 +351,9 @@ export function ListingDetailPage() {
       <section className="listing-gallery"><div className="listing-gallery__main">{image ? <img src={image} alt={listing.title} /> : <span><ImageOff size={42} /></span>}</div>{images.length > 1 && <div className="listing-gallery__thumbs" aria-label="Listing images">{images.map((item, index) => <button key={item.id || item.url} type="button" className={image === item.url ? 'is-active' : ''} onClick={() => setSelectedImageUrl(item.url)} aria-label={`View image ${index + 1} of ${images.length}`} aria-pressed={image === item.url}><img src={item.url} alt="" /></button>)}</div>}</section>
       <section className="listing-summary"><div className="listing-summary__badges"><span>{CONDITIONS.find((item) => item.value === listing.condition)?.label || listing.condition}</span>{listing.promotedUntil && <span>Promoted</span>}</div><h1>{listing.title}</h1><strong className="listing-detail__price">{money(listing.price, listing.currency)}</strong><p className="listing-detail__location"><MapPin size={16} /> {listing.location || 'Nigeria'} · {relativeTime(listing.createdAt)}</p><div className="listing-detail__actions"><button type="button" className="app-button app-button--primary" onClick={messageSeller}><MessageCircle size={18} /> Chat with seller</button>{phone ? <><a className="app-button app-button--outline" href={`tel:${phone}`}><Phone size={18} /> Call</a><a className="app-button app-button--outline" href={`https://wa.me/${String(phone).replace(/\D/g, '')}`} target="_blank" rel="noreferrer">WhatsApp</a></> : <button type="button" className="app-button app-button--outline" onClick={() => showPopup({ title: 'Seller phone unavailable', message: 'This seller has not added a phone number. You can still contact them safely through Zidash chat.' })}><Phone size={18} /> Contact options</button>}</div><div className="listing-description"><h2>Description</h2><p>{listing.description}</p></div><div className="report-links"><button type="button" className="text-danger" onClick={() => openReport('listing')}><CircleAlert size={15} /> Report this product</button>{sellerId && <button type="button" className="text-danger" onClick={() => openReport('seller')}><CircleAlert size={15} /> Report seller</button>}</div></section>
     </div>
-    <section className="seller-panel"><div className="seller-panel__avatar">{sellerName(listing).slice(0, 2).toUpperCase()}</div><div><span className="app-eyebrow">Seller</span><h2>{sellerName(listing)}</h2><p>{listing.seller?.location || listing.location || 'Nigeria'}</p><div className="seller-signals"><span><ShieldCheck size={15} /> Trust {listing.seller?.trustScore || 0}%</span><span><Star size={15} /> {listing.seller?.ratingAverage || 'New'}</span></div></div>{sellerId ? <Link className="app-button app-button--outline" to={`/app/seller/${sellerId}`}>View store</Link> : <button className="app-button app-button--outline" type="button" onClick={() => showPopup({ tone: 'warning', title: 'Seller profile not available', message: 'This seller has not created a public store profile yet.' })}>View store</button>}</section>
+    <section className="seller-panel"><div className="seller-panel__avatar">{sellerName(listing).slice(0, 2).toUpperCase()}</div><div><span className="app-eyebrow">Seller</span><h2>{sellerName(listing)}</h2><p>{listing.seller?.location || listing.location || 'Nigeria'}</p><div className="seller-signals"><span><ShieldCheck size={15} /> Trust {trustScore}%</span><span><Star size={15} /> {ratingLabel}{ratingCount > 0 ? ` (${ratingCount})` : ''}</span></div><SellerRatingControl sellerId={sellerId} returnTo={`/app/listing/${listingId}`} onMetricsChange={updateSellerMetrics} /></div>{sellerId ? <Link className="app-button app-button--outline" to={`/app/seller/${sellerId}`}>View store</Link> : <button className="app-button app-button--outline" type="button" onClick={() => showPopup({ tone: 'warning', title: 'Seller profile not available', message: 'This seller has not created a public store profile yet.' })}>View store</button>}</section>
     {filteredSimilar.length > 0 && <section className="app-section similar-products"><SectionHeading title="Similar products" /><ListingGrid listings={filteredSimilar} /></section>}
-    {reportTarget && <ReportDialog title={reportTarget === 'seller' ? 'Report seller' : 'Report product'} subjectLabel={reportTarget === 'seller' ? 'seller' : 'product'} submitting={reporting} onClose={() => setReportTarget(null)} onSubmit={submitReport} />}
+    {reportTarget && <ReportDialog title={reportTarget === 'seller' ? 'Report seller' : 'Report product'} subjectLabel={reportTarget === 'seller' ? 'seller' : 'product'} submitting={reporting} requireOtherDetails={reportTarget === 'seller'} onClose={() => setReportTarget(null)} onSubmit={submitReport} />}
   </div>
 }
 
@@ -293,20 +365,70 @@ export function SellerPage() {
   const seller = useRemote(() => api.seller(sellerId), [sellerId])
   const listings = useRemote(() => api.sellerListings(sellerId), [sellerId])
   const [following, setFollowing] = useState(false)
+  const [followersCount, setFollowersCount] = useState(0)
+  const [followBusy, setFollowBusy] = useState(false)
   const [reportOpen, setReportOpen] = useState(false)
   const [reporting, setReporting] = useState(false)
-  useEffect(() => { if (auth.isAuthenticated) api.followStatus(sellerId).then((response) => setFollowing(Boolean(response.data?.isFollowing))).catch(() => {}) }, [auth.isAuthenticated, sellerId])
+  const [previewImage, setPreviewImage] = useState(null)
+  useEffect(() => {
+    if (seller.data) setFollowersCount(Number(seller.data.followersCount || 0))
+  }, [seller.data])
+  useEffect(() => {
+    let cancelled = false
+    if (!auth.isAuthenticated) {
+      setFollowing(false)
+      return () => { cancelled = true }
+    }
+    api.followStatus(sellerId).then((response) => {
+      if (cancelled) return
+      setFollowing(Boolean(response.data?.isFollowing))
+      if (response.data?.followersCount !== undefined) setFollowersCount(Number(response.data.followersCount))
+    }).catch(() => {})
+    return () => { cancelled = true }
+  }, [auth.isAuthenticated, sellerId])
+  useEffect(() => {
+    if (!previewImage) return undefined
+    const previousOverflow = document.body.style.overflow
+    const closeOnEscape = (event) => {
+      if (event.key === 'Escape') setPreviewImage(null)
+    }
+    document.body.style.overflow = 'hidden'
+    window.addEventListener('keydown', closeOnEscape)
+    return () => {
+      document.body.style.overflow = previousOverflow
+      window.removeEventListener('keydown', closeOnEscape)
+    }
+  }, [previewImage])
   async function toggleFollow() {
     if (!auth.isAuthenticated) return navigate(`/auth?returnTo=${encodeURIComponent(`/app/seller/${sellerId}`)}`)
-    try { const response = await api.toggleFollow(sellerId); setFollowing(Boolean(response.data?.isFollowing)) } catch (error) { showPopup({ tone: 'error', message: error.message }) }
+    if (followBusy) return
+    const previousFollowing = following
+    const previousCount = followersCount
+    const nextFollowing = !previousFollowing
+    setFollowBusy(true)
+    setFollowing(nextFollowing)
+    setFollowersCount((current) => Math.max(0, current + (nextFollowing ? 1 : -1)))
+    try {
+      const response = await api.toggleFollow(sellerId)
+      setFollowing(Boolean(response.data?.isFollowing))
+      if (response.data?.followersCount !== undefined) setFollowersCount(Number(response.data.followersCount))
+    } catch (error) {
+      setFollowing(previousFollowing)
+      setFollowersCount(previousCount)
+      showPopup({ tone: 'error', message: error.message })
+    } finally {
+      setFollowBusy(false)
+    }
   }
   function openSellerReport() { if (!auth.isAuthenticated) return navigate(`/auth?returnTo=${encodeURIComponent(`/app/seller/${sellerId}`)}`); setReportOpen(true) }
-  async function reportSeller(reason) { setReporting(true); try { await api.report({ reporterId: auth.user.id, subjectType: 'seller', subjectId: sellerId, reason, details: 'Reported from the Zidash web seller profile' }); setReportOpen(false); showPopup({ tone: 'success', message: 'Seller reported. Thank you.' }) } catch (error) { showPopup({ tone: 'error', message: error.message }) } finally { setReporting(false) } }
+  async function reportSeller(reason, otherDetails = '') { setReporting(true); try { await api.report({ reporterId: auth.user.id, subjectType: 'seller', subjectId: sellerId, reason, details: reason === 'Other' ? otherDetails : 'Reported from the Zidash web seller profile' }); setReportOpen(false); showPopup({ tone: 'success', message: 'Seller reported. Thank you.' }) } catch (error) { showPopup({ tone: 'error', message: error.message }) } finally { setReporting(false) } }
   if (seller.loading) return <div className="app-page"><LoadingState label="Loading seller store" /></div>
   if (seller.error || !seller.data) return <div className="app-page centered-page-state"><EmptyState icon={Store} title="Seller profile not available" message={seller.error || 'This seller has not created a public storefront.'} /></div>
   const profile = seller.data
   const isOwnStore = auth.bootstrap?.sellerProfile?.id === sellerId
-  return <div className="app-page"><section className="store-hero"><div className="store-hero__cover" style={profile.coverImageUrl ? { backgroundImage: `url(${profile.coverImageUrl})` } : undefined} aria-label={`${profile.displayName || 'Seller'} header image`} /><div className="store-hero__content"><div className="store-avatar">{profile.displayName?.slice(0, 2).toUpperCase()}</div><div className="store-hero__copy"><h1>{profile.displayName}</h1><p>{profile.bio || 'Local seller on Zidash'}</p><div className="store-meta"><span><MapPin size={15} /> {profile.location || 'Nigeria'}</span><span><BadgeCheck size={15} /> Trust score {profile.trustScore || 0}%</span><span><Star size={15} /> {profile.ratingAverage || 0} ({profile.ratingCount || 0})</span></div></div><div className="store-hero__actions">{!isOwnStore && <button type="button" className={`app-button ${following ? 'app-button--outline' : 'app-button--primary'}`} onClick={toggleFollow}>{following ? 'Following' : 'Follow seller'}</button>}{!isOwnStore && <button type="button" className="store-report-button" onClick={openSellerReport}><CircleAlert size={16} /> Report seller</button>}</div></div></section><section className="app-section"><SectionHeading title="Listings from this seller" subtitle={`Member since ${shortDate(profile.memberSince)}`} />{listings.loading ? <LoadingState /> : listings.error ? <ErrorState message={listings.error} retry={listings.reload} /> : <ListingGrid listings={unwrapItems(listings)} emptyTitle="This seller has no active listings" />}</section>{reportOpen && <ReportDialog title="Report seller" subjectLabel="seller" submitting={reporting} onClose={() => setReportOpen(false)} onSubmit={reportSeller} />}</div>
+  const sellerAvatarUrl = profile.user?.avatarUrl || profile.avatarUrl
+  const sellerDisplayName = profile.displayName || 'Seller'
+  return <div className="app-page"><section className="store-hero">{profile.coverImageUrl ? <button className="store-hero__cover store-hero__cover--preview" type="button" style={{ backgroundImage: `url(${profile.coverImageUrl})` }} onClick={() => setPreviewImage({ src: profile.coverImageUrl, alt: `${sellerDisplayName} store header`, kind: 'cover' })} aria-label={`Preview ${sellerDisplayName} store header image`} /> : <div className="store-hero__cover" aria-label={`${sellerDisplayName} header image`} />}<div className="store-hero__content">{sellerAvatarUrl ? <button className="store-avatar store-avatar--preview" type="button" onClick={() => setPreviewImage({ src: sellerAvatarUrl, alt: `${sellerDisplayName} profile`, kind: 'avatar' })} aria-label={`Preview ${sellerDisplayName} profile image`}><img src={sellerAvatarUrl} alt="" /></button> : <div className="store-avatar">{sellerDisplayName.slice(0, 2).toUpperCase()}</div>}<div className="store-hero__copy"><h1>{profile.displayName}</h1><p>{profile.bio || 'Local seller on Zidash'}</p><div className="store-meta"><span><MapPin size={15} /> {profile.location || 'Nigeria'}</span><span><BadgeCheck size={15} /> Trust score {profile.trustScore || 0}%</span><span><Star size={15} /> {profile.ratingAverage || 0} ({profile.ratingCount || 0})</span><span><UsersRound size={15} /> {followersCount.toLocaleString()} followers</span></div></div><div className="store-hero__actions">{!isOwnStore && <button type="button" className={`app-button ${following ? 'app-button--outline' : 'app-button--primary'}`} onClick={toggleFollow} disabled={followBusy} aria-busy={followBusy}>{following ? 'Following' : 'Follow seller'}</button>}{!isOwnStore && <button type="button" className="store-report-button" onClick={openSellerReport}><CircleAlert size={16} /> Report seller</button>}</div></div></section><section className="app-section"><SectionHeading title="Listings from this seller" subtitle={`Member since ${shortDate(profile.memberSince)}`} />{listings.loading ? <LoadingState /> : listings.error ? <ErrorState message={listings.error} retry={listings.reload} /> : <ListingGrid listings={unwrapItems(listings)} emptyTitle="This seller has no active listings" />}</section>{reportOpen && <ReportDialog title="Report seller" subjectLabel="seller" submitting={reporting} requireOtherDetails onClose={() => setReportOpen(false)} onSubmit={reportSeller} />}{previewImage && <div className="profile-photo-preview" onPointerDown={(event) => event.target === event.currentTarget && setPreviewImage(null)}><section className={`profile-photo-preview__dialog ${previewImage.kind === 'cover' ? 'profile-photo-preview__dialog--cover' : ''}`} role="dialog" aria-modal="true" aria-label={`${sellerDisplayName} ${previewImage.kind === 'cover' ? 'store header' : 'profile image'} preview`}><button className="profile-photo-preview__close" type="button" onClick={() => setPreviewImage(null)} aria-label="Close image preview" autoFocus><X size={22} /></button><img className={`profile-photo-preview__image ${previewImage.kind === 'cover' ? 'profile-photo-preview__image--cover' : ''}`} src={previewImage.src} alt={previewImage.alt} /></section></div>}</div>
 }
 
 export function SavedProductsPage() {

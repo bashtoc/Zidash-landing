@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { BadgeCheck, Camera, ChevronRight, ImagePlus, LockKeyhole, LogOut, Mail, PackageCheck, PlusCircle, Store, Trash2, UploadCloud, WalletCards } from 'lucide-react'
+import { BadgeCheck, Camera, ChevronRight, ImagePlus, LockKeyhole, LogOut, Mail, PackageCheck, PlusCircle, Store, Trash2, UploadCloud, WalletCards, X } from 'lucide-react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { api, unwrapItems } from '../api'
 import { useAuth } from '../auth-context'
@@ -122,8 +122,27 @@ export function ProfilePage() {
   const { showPopup } = usePopup()
   const [editing, setEditing] = useState(false)
   const [coverBusy, setCoverBusy] = useState(false)
+  const [avatarBusy, setAvatarBusy] = useState(false)
+  const [avatarPreviewOpen, setAvatarPreviewOpen] = useState(false)
+  const [coverPreviewOpen, setCoverPreviewOpen] = useState(false)
   const coverInput = useRef(null)
+  const avatarInput = useRef(null)
   const data = auth.bootstrap
+  useEffect(() => {
+    if (!avatarPreviewOpen && !coverPreviewOpen) return undefined
+    const previousOverflow = document.body.style.overflow
+    const closeOnEscape = (event) => {
+      if (event.key !== 'Escape') return
+      setAvatarPreviewOpen(false)
+      setCoverPreviewOpen(false)
+    }
+    document.body.style.overflow = 'hidden'
+    window.addEventListener('keydown', closeOnEscape)
+    return () => {
+      document.body.style.overflow = previousOverflow
+      window.removeEventListener('keydown', closeOnEscape)
+    }
+  }, [avatarPreviewOpen, coverPreviewOpen])
   if (auth.loading && !data) return <div className="app-page"><LoadingState label="Loading profile" /></div>
   const user = data?.user || auth.user || {}
   const seller = data?.sellerProfile || {}
@@ -191,7 +210,54 @@ export function ProfilePage() {
     })
   }
 
-  return <div className="app-page"><section className="profile-hero"><div className="profile-cover-wrap">{seller.coverImageUrl ? <img className="profile-cover" src={seller.coverImageUrl} alt="" /> : <div className="profile-cover profile-cover--empty"><Camera size={24} /> Public profile header</div>}<div className="profile-cover-actions"><input ref={coverInput} className="profile-cover-file" type="file" accept="image/jpeg,image/png,image/webp" onChange={changeCover} /><button className="profile-cover-action" type="button" disabled={coverBusy} onClick={() => coverInput.current?.click()}><ImagePlus size={15} /> {coverBusy ? 'Saving…' : seller.coverImageUrl ? 'Change header' : 'Add header image'}</button>{seller.coverImageUrl && <button className="profile-cover-action profile-cover-action--danger" type="button" disabled={coverBusy} onClick={deleteCover}><Trash2 size={15} /> Delete</button>}</div></div><div className="profile-identity"><span className="profile-avatar">{user.avatarUrl ? <img src={user.avatarUrl} alt="" /> : name.split(/\s+/).map((part) => part[0]).join('').slice(0, 2)}</span><div><h1>{name}</h1><p>{user.email}</p><span><WalletCards size={14} /> Balance {money(wallet.availableBalance, wallet.currency)}</span></div><button className="app-button app-button--outline" type="button" onClick={() => setEditing(!editing)}>{editing ? 'Cancel editing' : 'Edit profile'}</button></div></section>{editing && <form className="app-form profile-edit-form" onSubmit={saveProfile}><div className="form-grid"><label>First name<input name="firstName" defaultValue={user.firstName || ''} required /></label><label>Last name<input name="lastName" defaultValue={user.lastName || ''} required /></label><label>Phone<input name="phone" defaultValue={user.phone || ''} /></label><label>Store display name<input name="displayName" defaultValue={seller.displayName || name} /></label><label>Location<select name="location" defaultValue={seller.location || 'Lagos'}>{NIGERIAN_LOCATIONS.filter((item) => item !== 'All').map((item) => <option key={item}>{item}</option>)}</select></label></div><label>Store bio<textarea name="bio" rows="4" defaultValue={seller.bio || ''} /></label><button className="app-button app-button--primary" type="submit">Save changes</button></form>}<div className="profile-tool-grid">{links.map(([to, icon, title, subtitle]) => <Link key={to} to={to}><span className={`profile-tool-icon profile-tool-icon--${icon}`} aria-hidden="true" /><div><h2>{title}</h2><p>{subtitle}</p></div><ChevronRight size={18} /></Link>)}</div><section className="account-actions"><h2>Account</h2><button className="is-danger" type="button" onClick={deleteAccount}><Trash2 size={18} /><span><strong>Delete account</strong><small>Permanently remove your account</small></span><ChevronRight size={17} /></button><button type="button" onClick={logout}><LogOut size={18} /><span><strong>Logout</strong><small>Sign out of this device</small></span><ChevronRight size={17} /></button></section></div>
+  async function changeAvatar(event) {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (!file) return
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      showPopup({ tone: 'error', message: 'Choose a JPG, PNG, or WebP image.' })
+      return
+    }
+    setAvatarBusy(true)
+    try {
+      const [avatarUrl] = await api.upload([file])
+      if (!avatarUrl) throw new Error('The image upload did not return a usable URL.')
+      await api.updateProfile({ avatarUrl })
+      await auth.refreshBootstrap()
+      setAvatarPreviewOpen(false)
+      showPopup({ tone: 'success', message: 'Profile photo updated.' })
+    } catch (error) {
+      showPopup({ tone: 'error', message: error.message })
+    } finally {
+      setAvatarBusy(false)
+    }
+  }
+
+  function deleteAvatar() {
+    setAvatarPreviewOpen(false)
+    showPopup({
+      tone: 'warning',
+      title: 'Remove profile photo?',
+      message: 'Your initials will be shown until you upload a new profile photo.',
+      action: {
+        label: 'Remove photo',
+        onClick: async () => {
+          setAvatarBusy(true)
+          try {
+            await api.updateProfile({ avatarUrl: null })
+            await auth.refreshBootstrap()
+            showPopup({ tone: 'success', message: 'Profile photo removed.' })
+          } catch (error) {
+            showPopup({ tone: 'error', message: error.message })
+          } finally {
+            setAvatarBusy(false)
+          }
+        },
+      },
+    })
+  }
+
+  return <div className="app-page"><section className="profile-hero"><div className="profile-cover-wrap">{seller.coverImageUrl ? <button className="profile-cover-preview-button" type="button" onClick={() => setCoverPreviewOpen(true)} aria-label={`Preview ${name}'s header image`}><img className="profile-cover" src={seller.coverImageUrl} alt="" /></button> : <div className="profile-cover profile-cover--empty"><Camera size={24} /> Public profile header</div>}<div className="profile-cover-actions"><input ref={coverInput} className="profile-cover-file" type="file" accept="image/jpeg,image/png,image/webp" onChange={changeCover} /><button className="profile-cover-action" type="button" disabled={coverBusy} onClick={() => coverInput.current?.click()}><ImagePlus size={15} /> {coverBusy ? 'Saving…' : seller.coverImageUrl ? 'Change header' : 'Add header image'}</button>{seller.coverImageUrl && <button className="profile-cover-action profile-cover-action--danger" type="button" disabled={coverBusy} onClick={deleteCover}><Trash2 size={15} /> Delete</button>}</div></div><div className="profile-identity"><div className="profile-avatar-wrap"><input ref={avatarInput} className="profile-cover-file" type="file" accept="image/jpeg,image/png,image/webp" onChange={changeAvatar} />{user.avatarUrl ? <button className="profile-avatar profile-avatar--button" type="button" onClick={() => setAvatarPreviewOpen(true)} aria-label={`Preview ${name}'s profile photo`}><img src={user.avatarUrl} alt="" /></button> : <span className="profile-avatar">{name.split(/\s+/).map((part) => part[0]).join('').slice(0, 2)}</span>}<button className="profile-avatar-edit" type="button" disabled={avatarBusy} onClick={() => avatarInput.current?.click()} aria-label={user.avatarUrl ? 'Change profile photo' : 'Upload profile photo'}><ImagePlus size={16} /></button></div><div><h1>{name}</h1><p>{user.email}</p><span><WalletCards size={14} /> Balance {money(wallet.availableBalance, wallet.currency)}</span></div><button className="app-button app-button--outline" type="button" onClick={() => setEditing(!editing)}>{editing ? 'Cancel editing' : 'Edit profile'}</button></div></section>{editing && <form className="app-form profile-edit-form" onSubmit={saveProfile}><div className="form-grid"><label>First name<input name="firstName" defaultValue={user.firstName || ''} required /></label><label>Last name<input name="lastName" defaultValue={user.lastName || ''} required /></label><label>Phone<input name="phone" defaultValue={user.phone || ''} /></label><label>Store display name<input name="displayName" defaultValue={seller.displayName || name} /></label><label>Location<select name="location" defaultValue={seller.location || 'Lagos'}>{NIGERIAN_LOCATIONS.filter((item) => item !== 'All').map((item) => <option key={item}>{item}</option>)}</select></label></div><label>Store bio<textarea name="bio" rows="4" defaultValue={seller.bio || ''} /></label><button className="app-button app-button--primary" type="submit">Save changes</button></form>}<div className="profile-tool-grid">{links.map(([to, icon, title, subtitle]) => <Link key={to} to={to}><span className={`profile-tool-icon profile-tool-icon--${icon}`} aria-hidden="true" /><div><h2>{title}</h2><p>{subtitle}</p></div><ChevronRight size={18} /></Link>)}</div><section className="account-actions"><h2>Account</h2><button className="is-danger" type="button" onClick={deleteAccount}><Trash2 size={18} /><span><strong>Delete account</strong><small>Permanently remove your account</small></span><ChevronRight size={17} /></button><button type="button" onClick={logout}><LogOut size={18} /><span><strong>Logout</strong><small>Sign out of this device</small></span><ChevronRight size={17} /></button></section>{avatarPreviewOpen && user.avatarUrl && <div className="profile-photo-preview" onPointerDown={(event) => event.target === event.currentTarget && setAvatarPreviewOpen(false)}><section className="profile-photo-preview__dialog" role="dialog" aria-modal="true" aria-label={`${name}'s profile photo`}><button className="profile-photo-preview__close" type="button" onClick={() => setAvatarPreviewOpen(false)} aria-label="Close profile photo preview" autoFocus><X size={22} /></button><img className="profile-photo-preview__image" src={user.avatarUrl} alt={`${name}'s profile`} /><div className="profile-photo-preview__actions"><button type="button" disabled={avatarBusy} onClick={() => avatarInput.current?.click()}><ImagePlus size={17} /> {avatarBusy ? 'Saving…' : 'Change photo'}</button><button className="is-danger" type="button" disabled={avatarBusy} onClick={deleteAvatar}><Trash2 size={17} /> Delete photo</button></div></section></div>}{coverPreviewOpen && seller.coverImageUrl && <div className="profile-photo-preview" onPointerDown={(event) => event.target === event.currentTarget && setCoverPreviewOpen(false)}><section className="profile-photo-preview__dialog profile-photo-preview__dialog--cover" role="dialog" aria-modal="true" aria-label={`${name}'s header image`}><button className="profile-photo-preview__close" type="button" onClick={() => setCoverPreviewOpen(false)} aria-label="Close header image preview" autoFocus><X size={22} /></button><img className="profile-photo-preview__image profile-photo-preview__image--cover" src={seller.coverImageUrl} alt={`${name}'s profile header`} /></section></div>}</div>
 }
 
 export function SellPage() {
