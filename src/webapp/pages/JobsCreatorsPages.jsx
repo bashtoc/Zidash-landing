@@ -29,27 +29,15 @@ function creatorName(creator) {
   return `${niche} Creator${suffix}`
 }
 
-const jobActionArtwork = {
-  search: [0, 0],
-  post: [1, 0],
-  creators: [0, 1],
-  become: [1, 1],
-}
-
-function JobActionArtwork({ name }) {
-  const [column, row] = jobActionArtwork[name]
-  return <span className="job-action-artwork" aria-hidden="true" style={{ backgroundPosition: `${column * 100}% ${row * 100}%` }} />
-}
-
 export function JobsHubPage() {
   const jobs = useRemote(() => api.jobs({ page: 1, limit: 5 }), [])
   const actions = [
-    ['/app/jobs/find', 'search', 'Find a job', 'Browse available vacancies and apply.'],
-    ['/app/jobs/post', 'post', 'Post a job', 'Hire professionals for your business.'],
-    ['/app/creators', 'creators', 'Find UGC creators', 'Connect with creators to promote your brand.'],
-    ['/app/creators/become', 'become', 'Become a UGC creator', 'Monetize your creativity and influence.'],
+    ['/app/jobs/find', 'Find a job', 'Browse available vacancies and apply.'],
+    ['/app/jobs/post', 'Post a job', 'Hire professionals for your business.'],
+    ['/app/creators', 'Find UGC creators', 'Connect with creators to promote your brand.'],
+    ['/app/creators/become', 'Become a UGC creator', 'Monetize your creativity and influence.'],
   ]
-  return <div className="app-page jobs-hub-page"><PageIntro eyebrow="Jobs & talent" title="What would you like to do today?" description="Find opportunities, hire great people, or work with creators." /><div className="job-action-grid">{actions.map(([to, artwork, title, text]) => <Link key={to} to={to}><span><JobActionArtwork name={artwork} /></span><div><h2>{title}</h2><p>{text}</p></div><ChevronRight /></Link>)}</div><section className="app-section"><div className="app-section-heading"><div><h2>Jobs posted already</h2><p>Fresh opportunities from the Zidash community</p></div><Link to="/app/jobs/find">View all <ChevronRight size={16} /></Link></div>{jobs.loading ? <LoadingState label="Loading jobs" /> : jobs.error ? <ErrorState message={jobs.error} retry={jobs.reload} /> : <JobList jobs={unwrapItems(jobs)} />}</section></div>
+  return <div className="app-page jobs-hub-page"><PageIntro eyebrow="Jobs & talent" title="What would you like to do today?" description="Find opportunities, hire great people, or work with creators." /><div className="job-action-grid">{actions.map(([to, title, text]) => <Link key={to} to={to}><div><h2>{title}</h2><p>{text}</p></div><ChevronRight /></Link>)}</div><section className="app-section"><div className="app-section-heading"><div><h2>Jobs posted already</h2><p>Fresh opportunities from the Zidash community</p></div><Link to="/app/jobs/find">View all <ChevronRight size={16} /></Link></div>{jobs.loading ? <LoadingState label="Loading jobs" /> : jobs.error ? <ErrorState message={jobs.error} retry={jobs.reload} /> : <JobList jobs={unwrapItems(jobs)} />}</section></div>
 }
 
 function JobList({ jobs }) {

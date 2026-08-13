@@ -121,6 +121,8 @@ export function ProfilePage() {
   const navigate = useNavigate()
   const { showPopup } = usePopup()
   const [editing, setEditing] = useState(false)
+  const [coverBusy, setCoverBusy] = useState(false)
+  const coverInput = useRef(null)
   const data = auth.bootstrap
   if (auth.loading && !data) return <div className="app-page"><LoadingState label="Loading profile" /></div>
   const user = data?.user || auth.user || {}
@@ -144,7 +146,52 @@ export function ProfilePage() {
   async function logout() { await auth.logout(); navigate('/app') }
   async function deleteAccount() { showPopup({ tone: 'warning', title: 'Delete your account?', message: 'This removes access to your Zidash account and cannot be undone from this screen.', action: { label: 'Delete account', onClick: async () => { try { await api.deleteAccount(); await auth.logout(); navigate('/') } catch (error) { showPopup({ tone: 'error', message: error.message }) } } } }) }
 
-  return <div className="app-page"><section className="profile-hero">{seller.coverImageUrl ? <img className="profile-cover" src={seller.coverImageUrl} alt="" /> : <div className="profile-cover profile-cover--empty"><Camera size={24} /> Public profile header</div>}<div className="profile-identity"><span className="profile-avatar">{user.avatarUrl ? <img src={user.avatarUrl} alt="" /> : name.split(/\s+/).map((part) => part[0]).join('').slice(0, 2)}</span><div><h1>{name}</h1><p>{user.email}</p><span><WalletCards size={14} /> Balance {money(wallet.availableBalance, wallet.currency)}</span></div><button className="app-button app-button--outline" type="button" onClick={() => setEditing(!editing)}>{editing ? 'Cancel editing' : 'Edit profile'}</button></div></section>{editing && <form className="app-form profile-edit-form" onSubmit={saveProfile}><div className="form-grid"><label>First name<input name="firstName" defaultValue={user.firstName || ''} required /></label><label>Last name<input name="lastName" defaultValue={user.lastName || ''} required /></label><label>Phone<input name="phone" defaultValue={user.phone || ''} /></label><label>Store display name<input name="displayName" defaultValue={seller.displayName || name} /></label><label>Location<select name="location" defaultValue={seller.location || 'Lagos'}>{NIGERIAN_LOCATIONS.filter((item) => item !== 'All').map((item) => <option key={item}>{item}</option>)}</select></label></div><label>Store bio<textarea name="bio" rows="4" defaultValue={seller.bio || ''} /></label><button className="app-button app-button--primary" type="submit">Save changes</button></form>}<div className="profile-tool-grid">{links.map(([to, icon, title, subtitle]) => <Link key={to} to={to}><span className={`profile-tool-icon profile-tool-icon--${icon}`} aria-hidden="true" /><div><h2>{title}</h2><p>{subtitle}</p></div><ChevronRight size={18} /></Link>)}</div><section className="account-actions"><h2>Account</h2><button className="is-danger" type="button" onClick={deleteAccount}><Trash2 size={18} /><span><strong>Delete account</strong><small>Permanently remove your account</small></span><ChevronRight size={17} /></button><button type="button" onClick={logout}><LogOut size={18} /><span><strong>Logout</strong><small>Sign out of this device</small></span><ChevronRight size={17} /></button></section></div>
+  async function changeCover(event) {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (!file) return
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      showPopup({ tone: 'error', message: 'Choose a JPG, PNG, or WebP image.' })
+      return
+    }
+    setCoverBusy(true)
+    try {
+      const [coverImageUrl] = await api.upload([file])
+      if (!coverImageUrl) throw new Error('The image upload did not return a usable URL.')
+      await api.updateProfile({ sellerProfile: { coverImageUrl } })
+      await auth.refreshBootstrap()
+      showPopup({ tone: 'success', message: 'Header image updated.' })
+    } catch (error) {
+      showPopup({ tone: 'error', message: error.message })
+    } finally {
+      setCoverBusy(false)
+    }
+  }
+
+  function deleteCover() {
+    showPopup({
+      tone: 'warning',
+      title: 'Remove header image?',
+      message: 'Your profile will use the default header until you upload a new image.',
+      action: {
+        label: 'Remove image',
+        onClick: async () => {
+          setCoverBusy(true)
+          try {
+            await api.removeProfileCover()
+            await auth.refreshBootstrap()
+            showPopup({ tone: 'success', message: 'Header image removed.' })
+          } catch (error) {
+            showPopup({ tone: 'error', message: error.message })
+          } finally {
+            setCoverBusy(false)
+          }
+        },
+      },
+    })
+  }
+
+  return <div className="app-page"><section className="profile-hero"><div className="profile-cover-wrap">{seller.coverImageUrl ? <img className="profile-cover" src={seller.coverImageUrl} alt="" /> : <div className="profile-cover profile-cover--empty"><Camera size={24} /> Public profile header</div>}<div className="profile-cover-actions"><input ref={coverInput} className="profile-cover-file" type="file" accept="image/jpeg,image/png,image/webp" onChange={changeCover} /><button className="profile-cover-action" type="button" disabled={coverBusy} onClick={() => coverInput.current?.click()}><ImagePlus size={15} /> {coverBusy ? 'Saving…' : seller.coverImageUrl ? 'Change header' : 'Add header image'}</button>{seller.coverImageUrl && <button className="profile-cover-action profile-cover-action--danger" type="button" disabled={coverBusy} onClick={deleteCover}><Trash2 size={15} /> Delete</button>}</div></div><div className="profile-identity"><span className="profile-avatar">{user.avatarUrl ? <img src={user.avatarUrl} alt="" /> : name.split(/\s+/).map((part) => part[0]).join('').slice(0, 2)}</span><div><h1>{name}</h1><p>{user.email}</p><span><WalletCards size={14} /> Balance {money(wallet.availableBalance, wallet.currency)}</span></div><button className="app-button app-button--outline" type="button" onClick={() => setEditing(!editing)}>{editing ? 'Cancel editing' : 'Edit profile'}</button></div></section>{editing && <form className="app-form profile-edit-form" onSubmit={saveProfile}><div className="form-grid"><label>First name<input name="firstName" defaultValue={user.firstName || ''} required /></label><label>Last name<input name="lastName" defaultValue={user.lastName || ''} required /></label><label>Phone<input name="phone" defaultValue={user.phone || ''} /></label><label>Store display name<input name="displayName" defaultValue={seller.displayName || name} /></label><label>Location<select name="location" defaultValue={seller.location || 'Lagos'}>{NIGERIAN_LOCATIONS.filter((item) => item !== 'All').map((item) => <option key={item}>{item}</option>)}</select></label></div><label>Store bio<textarea name="bio" rows="4" defaultValue={seller.bio || ''} /></label><button className="app-button app-button--primary" type="submit">Save changes</button></form>}<div className="profile-tool-grid">{links.map(([to, icon, title, subtitle]) => <Link key={to} to={to}><span className={`profile-tool-icon profile-tool-icon--${icon}`} aria-hidden="true" /><div><h2>{title}</h2><p>{subtitle}</p></div><ChevronRight size={18} /></Link>)}</div><section className="account-actions"><h2>Account</h2><button className="is-danger" type="button" onClick={deleteAccount}><Trash2 size={18} /><span><strong>Delete account</strong><small>Permanently remove your account</small></span><ChevronRight size={17} /></button><button type="button" onClick={logout}><LogOut size={18} /><span><strong>Logout</strong><small>Sign out of this device</small></span><ChevronRight size={17} /></button></section></div>
 }
 
 export function SellPage() {

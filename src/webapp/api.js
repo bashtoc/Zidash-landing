@@ -289,6 +289,9 @@ export const api = {
   updateProfile(payload) {
     return apiRequest('/app/profile', { method: 'PATCH', body: JSON.stringify(payload), auth: true })
   },
+  removeProfileCover() {
+    return apiRequest('/app/profile/cover', { method: 'DELETE', auth: true })
+  },
   deleteAccount() {
     return apiRequest('/app/account', { method: 'DELETE', auth: true })
   },
