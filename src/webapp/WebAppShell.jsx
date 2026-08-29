@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useState } from 'react'
+import { Suspense, useEffect, useLayoutEffect, useState } from 'react'
 import { BriefcaseBusiness, ChevronDown, Headset, Heart, Home, LifeBuoy, MapPin, Megaphone, Menu, MessageCircle, PlusCircle, Store, UserRound, UsersRound, X } from 'lucide-react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import Footer from '../components/Footer'
@@ -14,6 +14,36 @@ const nav = [
   { to: '/app/messages', label: 'Messages', icon: MessageCircle, protected: true },
   { to: '/app/profile', label: 'Profile', icon: UserRound, protected: true },
 ]
+
+function MarketplaceHomeSkeleton() {
+  return <div className="app-page marketplace-home-skeleton" role="status" aria-live="polite">
+    <span className="marketplace-home-skeleton__label">Loading marketplace</span>
+    <div className="marketplace-home-skeleton__hero" aria-hidden="true">
+      <div className="marketplace-home-skeleton__hero-copy">
+        <span className="marketplace-home-skeleton__line marketplace-home-skeleton__line--eyebrow" />
+        <span className="marketplace-home-skeleton__line marketplace-home-skeleton__line--title" />
+        <span className="marketplace-home-skeleton__line marketplace-home-skeleton__line--title marketplace-home-skeleton__line--short" />
+        <span className="marketplace-home-skeleton__line marketplace-home-skeleton__line--body" />
+        <span className="marketplace-home-skeleton__line marketplace-home-skeleton__line--body marketplace-home-skeleton__line--medium" />
+      </div>
+      <span className="marketplace-home-skeleton__hero-art" />
+    </div>
+    <div className="marketplace-home-skeleton__search" aria-hidden="true"><span /><i /></div>
+    <section className="marketplace-home-skeleton__section" aria-hidden="true">
+      <div className="marketplace-home-skeleton__heading"><span /><i /></div>
+      <div className="marketplace-home-skeleton__categories">{Array.from({ length: 8 }, (_, index) => <div key={index}><span /><i /><b /></div>)}</div>
+    </section>
+    <section className="marketplace-home-skeleton__section" aria-hidden="true">
+      <div className="marketplace-home-skeleton__heading"><span /><i /></div>
+      <div className="marketplace-home-skeleton__cards">{Array.from({ length: 4 }, (_, index) => <div key={index}><span /><i /><b /></div>)}</div>
+    </section>
+  </div>
+}
+
+function ConsumerRouteLoader({ home }) {
+  if (home) return <MarketplaceHomeSkeleton />
+  return <div className="app-page consumer-route-loader" role="status" aria-live="polite"><span>Loading page</span></div>
+}
 
 export default function WebAppShell() {
   const auth = useAuth()
@@ -102,7 +132,7 @@ export default function WebAppShell() {
         </div>
       </aside>
       {menuOpen && <button className="consumer-sidebar-scrim" type="button" onClick={() => setMenuOpen(false)} aria-label="Close navigation" />}
-      <main className="consumer-main"><Outlet context={{ appLocation }} /></main>
+      <main className="consumer-main"><Suspense fallback={<ConsumerRouteLoader home={location.pathname === '/app'} />}><Outlet context={{ appLocation }} /></Suspense></main>
     </div>
     <Footer />
 

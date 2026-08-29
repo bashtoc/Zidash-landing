@@ -328,7 +328,7 @@ export function ListingDetailPage() {
     if (!subjectId) return
     setReporting(true)
     try {
-      await api.report({ reporterId: auth.user.id, subjectType, subjectId, reason, details: reason === 'Other' && subjectType === 'seller' ? otherDetails : 'Reported from the Zidash web listing page' })
+      await api.report({ reporterId: auth.user.id, subjectType, subjectId, reason, details: reason === 'Other' ? otherDetails : 'Reported from the Zidash web listing page' })
       setReportTarget(null)
       showPopup({ tone: 'success', message: `${subjectType === 'seller' ? 'Seller' : 'Product'} reported. Thank you.` })
     } catch (error) { showPopup({ tone: 'error', message: error.message }) } finally { setReporting(false) }
@@ -353,7 +353,7 @@ export function ListingDetailPage() {
     </div>
     <section className="seller-panel"><div className="seller-panel__avatar">{sellerName(listing).slice(0, 2).toUpperCase()}</div><div><span className="app-eyebrow">Seller</span><h2>{sellerName(listing)}</h2><p>{listing.seller?.location || listing.location || 'Nigeria'}</p><div className="seller-signals"><span><ShieldCheck size={15} /> Trust {trustScore}%</span><span><Star size={15} /> {ratingLabel}{ratingCount > 0 ? ` (${ratingCount})` : ''}</span></div><SellerRatingControl sellerId={sellerId} returnTo={`/app/listing/${listingId}`} onMetricsChange={updateSellerMetrics} /></div>{sellerId ? <Link className="app-button app-button--outline" to={`/app/seller/${sellerId}`}>View store</Link> : <button className="app-button app-button--outline" type="button" onClick={() => showPopup({ tone: 'warning', title: 'Seller profile not available', message: 'This seller has not created a public store profile yet.' })}>View store</button>}</section>
     {filteredSimilar.length > 0 && <section className="app-section similar-products"><SectionHeading title="Similar products" /><ListingGrid listings={filteredSimilar} /></section>}
-    {reportTarget && <ReportDialog title={reportTarget === 'seller' ? 'Report seller' : 'Report product'} subjectLabel={reportTarget === 'seller' ? 'seller' : 'product'} submitting={reporting} requireOtherDetails={reportTarget === 'seller'} onClose={() => setReportTarget(null)} onSubmit={submitReport} />}
+    {reportTarget && <ReportDialog title={reportTarget === 'seller' ? 'Report seller' : 'Report product'} subjectLabel={reportTarget === 'seller' ? 'seller' : 'product'} submitting={reporting} requireOtherDetails onClose={() => setReportTarget(null)} onSubmit={submitReport} />}
   </div>
 }
 
